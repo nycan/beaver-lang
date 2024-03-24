@@ -1,4 +1,4 @@
-#ifndef TESTLANG_PARSER__HPP
+#ifndef TESTLANG_PARSER_HPP
 #define TESTLANG_PARSER_HPP
 
 #include "lexer.hpp"
@@ -9,18 +9,20 @@
 
 class Parser{
 private:
-    static Lexer m_lexer;
+    Lexer m_lexer;
 
 public:
-    static std::unique_ptr<SyntaxTree> parseNum(){
+    Parser(Lexer& t_lexer): m_lexer(t_lexer) {}
+
+    std::unique_ptr<SyntaxTree> parseNum(){
         auto result = std::make_unique<NumberAST>(m_lexer.getNum());
         m_lexer.nextToken();
         return std::move(result);
     }
 
-    static std::unique_ptr<SyntaxTree> parseExpression();
+    std::unique_ptr<SyntaxTree> parseExpression();
 
-    static std::unique_ptr<SyntaxTree> parseParens(){
+    std::unique_ptr<SyntaxTree> parseParens(){
         m_lexer.nextToken();
         auto exprResult = parseExpression();
         if (!exprResult){
@@ -32,7 +34,7 @@ public:
         }
     }
 
-    static std::unique_ptr<SyntaxTree> parseIdentifier(){
+    std::unique_ptr<SyntaxTree> parseIdentifier(){
         std::string idName = m_lexer.getIdentifier();
         m_lexer.nextToken();
 
@@ -68,7 +70,7 @@ public:
         return std::make_unique<CallAST>(idName, std::move(args));
     }
 
-    static std::unique_ptr<SyntaxTree> handleUnknown(){
+    std::unique_ptr<SyntaxTree> handleUnknown(){
         switch(m_lexer.getChar()){
             case '(':
                 return parseParens();
@@ -78,7 +80,7 @@ public:
         }
     }
 
-    static std::unique_ptr<SyntaxTree> parseMain(){
+    std::unique_ptr<SyntaxTree> parseMain(){
         switch(m_lexer.getTok()){
             case Token::IDENTIFIER:
                 return parseIdentifier();
@@ -89,7 +91,7 @@ public:
         }
     }
 
-    static int BinopPrecedence(){ //TODO: replace this with something better
+    int BinopPrecedence(){ //TODO: replace this with something better
         switch(m_lexer.getChar()){
             case '*':
                 return 3;
@@ -108,7 +110,7 @@ public:
         }
     }
 
-    static std::unique_ptr<SyntaxTree> parseOpRHS(
+    std::unique_ptr<SyntaxTree> parseOpRHS(
         const int t_minPrec,
         std::unique_ptr<SyntaxTree> t_leftSide
     ){
@@ -143,7 +145,7 @@ public:
         }
     }
 
-    static std::unique_ptr<SyntaxTree> parseExpression(){
+    std::unique_ptr<SyntaxTree> parseExpression(){
         auto leftSide = parseMain();
         if(!leftSide){
             return nullptr;
@@ -151,7 +153,7 @@ public:
         return parseOpRHS(0, std::move(leftSide));
     }
 
-    static std::unique_ptr<PrototypeAST> parsePrototype(){
+    std::unique_ptr<PrototypeAST> parsePrototype(){
         if(m_lexer.getTok() != Token::IDENTIFIER){
             std::cerr << "Expected function name in prototype.\n";
             return nullptr;
@@ -177,7 +179,7 @@ public:
         return std::make_unique<PrototypeAST>(funcName,std::move(args));
     }
 
-    static std::unique_ptr<FunctionAST> parseDefinition(){
+    std::unique_ptr<FunctionAST> parseDefinition(){
         //function declaration
         m_lexer.nextToken();
 
@@ -191,6 +193,57 @@ public:
             return std::make_unique<FunctionAST>(std::move(prototype),std::move(expr));
         }
         return nullptr;
+    }
+
+    std::unique_ptr<PrototypeAST> parseExtern(){
+        m_lexer.nextToken();
+        return parsePrototype();
+    }
+
+    std::unique_ptr<FunctionAST> parseTopLevel(){
+        if(auto expr = parseExpression()){
+            auto prototype = std::make_unique<PrototypeAST>(
+                "somethingThatIllProbablyForgetToChange",
+                std::vector<std::string>()
+            );
+            return std::make_unique<FunctionAST>(std::move(prototype),std::move(expr));
+        }
+        return nullptr;
+    }
+
+    //temporary main function
+    void operator()(){
+        std::cerr << ">>> ";
+        m_lexer.nextToken();
+
+        while(true){
+            std::cerr << ">>> ";
+            switch(m_lexer.getTok()){
+                case Token::ENDFILE:
+                    return;
+                case Token::FUNC:
+                    if(parseDefinition()){
+                        std::cerr << "Successfully parsed function definition.\n";
+                    } else {
+                        m_lexer.nextToken();
+                    }
+                    break;
+                case Token::EXTERN:
+                    if(parseExtern()){
+                        std::cerr << "Successfully parsed extern.\n";
+                    } else {
+                        m_lexer.nextToken();
+                    }
+                    break;
+                default:
+                    if(m_lexer.getChar()==';'){
+                        m_lexer.nextToken();
+                    } else {
+                        parseTopLevel();
+                    }
+                    break;
+            }
+        }
     }
 };
 
