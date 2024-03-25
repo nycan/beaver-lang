@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cctype>
+#include <iostream>
 
 enum class Token{
     UNKNOWN,
@@ -15,23 +16,25 @@ enum class Token{
 
 class Lexer{
 private:
-    static std::string m_identifier;
-    static double m_numVal;
-    static Token m_currTok;
-    static int m_currChar;
+    std::string m_identifier;
+    double m_numVal;
+    Token m_currTok;
+    char m_currChar;
 
 public:
-    inline std::string& getIdentifier() const {return m_identifier;}
-    inline double getNum() const {return m_numVal;}
-    inline Token getTok() const {return m_currTok;}
-    inline char getChar() const {return m_currChar;}
+    Lexer(): m_identifier(""), m_numVal(0), m_currTok(Token::UNKNOWN), m_currChar(' ') {}
+
+    inline std::string getIdentifier() const {return m_identifier;}
+    double getNum() const {return m_numVal;}
+    Token getTok() const {return m_currTok;}
+    char getChar() const {return m_currChar;}
 
     //read the next token
-    static Token processToken(){
-        static int m_currChar = ' ';
+    Token processToken(){
         while(std::isspace(m_currChar)){
             m_currChar = getchar();
         }
+        std::cerr << "'" << m_currChar << "'" << '\n';
 
         // Keywords and identifiers
         if(std::isalpha(m_currChar)){
@@ -76,12 +79,12 @@ public:
             return Token::ENDFILE;
         }
 
-        m_currChar = getchar();
+        int tmpChar = getchar();
         return Token::UNKNOWN;
     }
 
     //almost the same as nextToken(), but also update m_currTok.
-    static Token nextToken(){
+    Token nextToken(){
         return m_currTok = processToken();
     }
 };
