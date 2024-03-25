@@ -92,6 +92,7 @@ std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
         case '(':
             return parseParens();
         default:
+            std::cerr << m_lexer.getChar() << '\n';
             fprintf(stderr,"Unknown token\n");
             return nullptr;
     }
@@ -139,8 +140,7 @@ std::unique_ptr<SyntaxTree> Parser::parseOpRHS(
             return t_leftSide;
         }
 
-        int operation = m_lexer.getChar();
-        std::cout << operation << '\n';
+        char operation = m_lexer.getChar();
         m_lexer.nextToken();
 
         auto rightSide = parseMain();
@@ -157,7 +157,8 @@ std::unique_ptr<SyntaxTree> Parser::parseOpRHS(
         }
 
         t_leftSide = std::make_unique<BinaryOpAST>(
-            operation,std::move(t_leftSide),
+            operation,
+            std::move(t_leftSide),
             std::move(rightSide)
         );
     }
@@ -233,9 +234,10 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
 
 //temporary main function
 void Parser::operator()(){
+    std::cerr << ">>> ";
     m_lexer.nextToken();
 
-    for(int i = 0; i<3; ++i){
+    while(true){
         switch(m_lexer.getTok()){
             case Token::ENDFILE:
                 return;

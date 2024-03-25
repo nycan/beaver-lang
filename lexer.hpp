@@ -3,7 +3,6 @@
 
 #include <string>
 #include <cctype>
-#include <iostream>
 
 enum class Token{
     UNKNOWN,
@@ -34,7 +33,6 @@ public:
         while(std::isspace(m_currChar)){
             m_currChar = getchar();
         }
-        std::cerr << "'" << m_currChar << "'" << '\n';
 
         // Keywords and identifiers
         if(std::isalpha(m_currChar)){
@@ -79,7 +77,7 @@ public:
             return Token::ENDFILE;
         }
 
-        int tmpChar = getchar();
+        m_currChar = getchar();
         return Token::UNKNOWN;
     }
 
