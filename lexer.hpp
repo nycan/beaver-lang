@@ -24,9 +24,9 @@ public:
     Lexer(): m_identifier(""), m_numVal(0), m_currTok(Token::UNKNOWN), m_currChar(' ') {}
 
     inline std::string getIdentifier() const {return m_identifier;}
-    double getNum() const {return m_numVal;}
-    Token getTok() const {return m_currTok;}
-    char getChar() const {return m_currChar;}
+    inline double getNum() const {return m_numVal;}
+    inline Token getTok() const {return m_currTok;}
+    inline char getChar() const {return m_currChar;}
 
     //read the next token
     Token processToken(){
@@ -81,8 +81,8 @@ public:
         return Token::UNKNOWN;
     }
 
-    //almost the same as nextToken(), but also update m_currTok.
-    Token nextToken(){
+    //almost the same as processToken(), but also update m_currTok.
+    inline Token nextToken(){
         return m_currTok = processToken();
     }
 };
