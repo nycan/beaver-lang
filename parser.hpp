@@ -43,7 +43,7 @@ std::unique_ptr<SyntaxTree> Parser::parseParens(){
     if (!exprResult){
         return nullptr;
     }
-    if(m_lexer.getChar() != ')'){
+    if(m_lexer.prevChar() != ')'){
         fprintf(stderr,"Missing ')'\n");
         return nullptr;
     }
@@ -56,14 +56,14 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
     m_lexer.nextToken();
 
     //variable
-    if(m_lexer.getChar() != '('){
+    if(m_lexer.prevChar() != '('){
         return std::make_unique<VariableAST>(idName);
     }
 
     //function call
     m_lexer.nextToken();
     std::vector<std::unique_ptr<SyntaxTree>> args;
-    if(m_lexer.getChar() != ')'){
+    if(m_lexer.prevChar() != ')'){
         while(true){
             if(auto argument = parseExpression()){
                 args.push_back(std::move(argument));
@@ -71,11 +71,11 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
                 return nullptr;
             }
             
-            if(m_lexer.getChar() == ')'){
+            if(m_lexer.prevChar() == ')'){
                 break;
             }
 
-            if(m_lexer.getChar() != ','){
+            if(m_lexer.prevChar() != ','){
                 fprintf(stderr,"Expected ')' or ',' in argument list.");
                 return nullptr;
             }
@@ -88,11 +88,11 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
 }
 
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
-    switch(m_lexer.getChar()){
+    switch(m_lexer.prevChar()){
         case '(':
             return parseParens();
         default:
-            std::cerr << m_lexer.getChar() << '\n';
+            std::cerr << m_lexer.prevChar() << '\n';
             fprintf(stderr,"Unknown token\n");
             return nullptr;
     }
@@ -110,7 +110,7 @@ std::unique_ptr<SyntaxTree> Parser::parseMain(){
 }
 
 int Parser::BinopPrecedence(){ //TODO: replace this with something better
-    switch(m_lexer.getChar()){
+    switch(m_lexer.prevChar()){
         case '*':
             return 3;
         case '/':
@@ -140,7 +140,7 @@ std::unique_ptr<SyntaxTree> Parser::parseOpRHS(
             return t_leftSide;
         }
 
-        char operation = m_lexer.getChar();
+        char operation = m_lexer.prevChar();
         m_lexer.nextToken();
 
         auto rightSide = parseMain();
@@ -183,7 +183,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     m_lexer.nextToken();
 
     //arguments
-    if(m_lexer.getChar() != '('){
+    if(m_lexer.prevChar() != '('){
         fprintf(stderr,"Expected '('\n");
         return nullptr;
     }
@@ -191,7 +191,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     while(m_lexer.nextToken() == Token::IDENTIFIER){
         args.push_back(m_lexer.getIdentifier());
     }
-    if(m_lexer.getChar() != ')'){
+    if(m_lexer.prevChar() != ')'){
         fprintf(stderr,"Expected ')'\n");
         return nullptr;
     }
@@ -234,8 +234,7 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
 
 //temporary main function
 void Parser::operator()(){
-    std::cerr << ">>> ";
-    m_lexer.nextToken();
+    m_lexer.nextToken();    
 
     while(true){
         switch(m_lexer.getTok()){
@@ -256,7 +255,7 @@ void Parser::operator()(){
                 }
                 break;
             default:
-                if(m_lexer.getChar()==';'){
+                if(m_lexer.prevChar()==';'){
                     m_lexer.nextToken();
                 } else {
                     if(parseTopLevel()){

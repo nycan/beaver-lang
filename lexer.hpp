@@ -19,25 +19,33 @@ private:
     double m_numVal;
     Token m_currTok;
     char m_currChar;
+    char m_lastChar;
 
 public:
-    Lexer(): m_identifier(""), m_numVal(0), m_currTok(Token::UNKNOWN), m_currChar(' ') {}
+    Lexer(): m_identifier(""), m_numVal(0), 
+             m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' ') {}
 
     inline std::string getIdentifier() const {return m_identifier;}
     inline double getNum() const {return m_numVal;}
     inline Token getTok() const {return m_currTok;}
     inline char getChar() const {return m_currChar;}
+    inline char prevChar() const {return m_lastChar;}
+
+    char nextchar(){
+        m_lastChar = m_currChar;
+        return m_currChar = getchar();
+    }
 
     //read the next token
     Token processToken(){
         while(std::isspace(m_currChar)){
-            m_currChar = getchar();
+            nextchar();
         }
 
         // Keywords and identifiers
         if(std::isalpha(m_currChar)){
             m_identifier = m_currChar;
-            while(std::isalnum(m_currChar=getchar())){
+            while(std::isalnum(nextchar())){
                 m_identifier += m_currChar;
             }
 
@@ -55,7 +63,7 @@ public:
             std::string numStr;
             do{
                 numStr += m_currChar;
-                m_currChar = getchar();
+                nextchar();
             } while (std::isdigit(m_currChar) || m_currChar=='.');
 
             m_numVal = std::stoi(numStr);
@@ -65,7 +73,7 @@ public:
         // Comments
         if(m_currChar=='#'){
             do{
-                m_currChar = getchar();
+                nextchar();
             } while (m_currChar != EOF && m_currChar != '\n' && m_currChar != '\r');
 
             if(m_currChar != EOF){
@@ -77,7 +85,7 @@ public:
             return Token::ENDFILE;
         }
 
-        m_currChar = getchar();
+        nextchar();
         return Token::UNKNOWN;
     }
 
