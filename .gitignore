@@ -35,4 +35,4 @@
 
 .vscode
 
-build
+build/*

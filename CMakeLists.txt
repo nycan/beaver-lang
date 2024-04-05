@@ -6,8 +6,17 @@ endif()
 
 project(testlang VERSION 0.1
                  DESCRIPTION "compiler testing"
-                 LANGUAGES CXX)
+                 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-set(SOURCE_FILES main.cpp)
-add_executable(testlang ${SOURCE_FILES})
+find_package(LLVM REQUIRED CONFIG)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+
+add_executable(testlang main.cpp)
+
+llvm_map_components_to_libnames(llvm_libs support core irreader)
+target_link_libraries(testlang ${llvm_libs})
