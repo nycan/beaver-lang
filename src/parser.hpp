@@ -33,7 +33,7 @@ public:
 };
 
 std::unique_ptr<SyntaxTree> Parser::parseNum(){
-    auto result = std::make_unique<NumberAST>(m_lexer.getNum());
+    auto result = std::make_unique<NumberAST>(m_genData, m_lexer.getNum());
     m_lexer.nextToken();
     return std::move(result);
 }
@@ -58,7 +58,7 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
 
     //variable
     if(m_lexer.prevChar() != '('){
-        return std::make_unique<VariableAST>(idName);
+        return std::make_unique<VariableAST>(m_genData, idName);
     }
 
     //function call
@@ -85,7 +85,7 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
     }
 
     m_lexer.nextToken();
-    return std::make_unique<CallAST>(idName, std::move(args));
+    return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
@@ -158,6 +158,7 @@ std::unique_ptr<SyntaxTree> Parser::parseOpRHS(
         }
 
         t_leftSide = std::make_unique<BinaryOpAST>(
+            m_genData,
             operation,
             std::move(t_leftSide),
             std::move(rightSide)
@@ -198,7 +199,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     }
     m_lexer.nextToken();
 
-    return std::make_unique<PrototypeAST>(funcName,std::move(args));
+    return std::make_unique<PrototypeAST>(m_genData, funcName, std::move(args));
 }
 
 std::unique_ptr<FunctionAST> Parser::parseDefinition(){
@@ -212,7 +213,7 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition(){
     }
 
     if(auto expr = parseExpression()){
-        return std::make_unique<FunctionAST>(std::move(prototype),std::move(expr));
+        return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(expr));
     }
     return nullptr;
 }
@@ -225,10 +226,11 @@ std::unique_ptr<PrototypeAST> Parser::parseExtern(){
 std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
     if(auto expr = parseExpression()){
         auto prototype = std::make_unique<PrototypeAST>(
+            m_genData,
             "somethingThatIllProbablyForgetToChange",
             std::vector<std::string>()
         );
-        return std::make_unique<FunctionAST>(std::move(prototype),std::move(expr));
+        return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(expr));
     }
     return nullptr;
 }
