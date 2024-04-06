@@ -229,7 +229,7 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
     if(auto expr = parseExpression()){
         auto prototype = std::make_unique<PrototypeAST>(
             m_genData,
-            "somethingThatIllProbablyForgetToChange",
+            "somethingThatIllProbablyForgetToChange", // Don't forget to change this
             std::vector<std::string>()
         );
         return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(expr));
