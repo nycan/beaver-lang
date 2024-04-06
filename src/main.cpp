@@ -2,6 +2,6 @@
 
 int main(){
     Lexer lex;
-    Parser parse(lex);
+    Parser parse(lex,std::make_shared<GeneratorData>());
     parse();
 }

@@ -24,6 +24,7 @@ private:
 public:
     Lexer(): m_identifier(""), m_numVal(0), 
              m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' ') {}
+    ~Lexer() = default;
 
     inline std::string getIdentifier() const {return m_identifier;}
     inline double getNum() const {return m_numVal;}

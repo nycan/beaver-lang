@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <iostream>
+#include <map>
 
 class GeneratorData{
 public:
@@ -22,14 +24,20 @@ public:
     std::unique_ptr<llvm::IRBuilder<>> m_builder;
     std::unique_ptr<llvm::Module> m_module;
     std::map<std::string,llvm::Value*> m_namedValues;
+
+    GeneratorData(){
+        m_context = std::make_unique<llvm::LLVMContext>();
+        m_module = std::make_unique<llvm::Module>("",*m_context);
+        m_builder = std::make_unique<llvm::IRBuilder<>>(*m_context);
+    }
 };
 
 class SyntaxTree{
 public:
-    std::unique_ptr<GeneratorData> m_generator;
+    std::shared_ptr<GeneratorData> m_generator;
 
 public:
-    SyntaxTree(std::unique_ptr<GeneratorData> t_generator): m_generator(std::move(t_generator)) {}
+    SyntaxTree(std::shared_ptr<GeneratorData> t_generator): m_generator(std::move(t_generator)) {}
     virtual ~SyntaxTree() = default;
     virtual llvm::Value* codegen() = 0;
 };
@@ -39,7 +47,7 @@ private:
     double m_value;
 
 public:
-    NumberAST(std::unique_ptr<GeneratorData> t_generator, const double t_value):
+    NumberAST(std::shared_ptr<GeneratorData> t_generator, const double t_value):
         SyntaxTree(std::move(t_generator)), m_value(t_value) {}
     llvm::Value* codegen() override {
         return llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(m_value));
@@ -51,7 +59,7 @@ private:
     std::string m_name;
 
 public:
-    VariableAST(std::unique_ptr<GeneratorData> t_generator, const std::string& t_name):
+    VariableAST(std::shared_ptr<GeneratorData> t_generator, const std::string& t_name):
         SyntaxTree(std::move(t_generator)), m_name(t_name) {}
     llvm::Value* codegen() override {
         llvm::Value* variable = m_generator->m_namedValues[m_name];
@@ -68,7 +76,7 @@ private:
     std::unique_ptr<SyntaxTree> m_lhs, m_rhs;
 
 public:
-    BinaryOpAST(std::unique_ptr<GeneratorData> t_generator,
+    BinaryOpAST(std::shared_ptr<GeneratorData> t_generator,
                 const char t_op,
                 std::unique_ptr<SyntaxTree> t_lhs,
                 std::unique_ptr<SyntaxTree> t_rhs
@@ -112,7 +120,7 @@ private:
     std::vector<std::unique_ptr<SyntaxTree>> m_args;
 
 public:
-    CallAST(std::unique_ptr<GeneratorData> t_generator,
+    CallAST(std::shared_ptr<GeneratorData> t_generator,
             const std::string& t_callee,
             std::vector<std::unique_ptr<SyntaxTree>> t_args
             ): SyntaxTree(std::move(t_generator)), m_callee(t_callee), m_args(std::move(t_args)) {}
@@ -143,12 +151,12 @@ public:
 
 class PrototypeAST {
 private:
-    std::unique_ptr<GeneratorData> m_generator;
+    std::shared_ptr<GeneratorData> m_generator;
     std::string m_name;
     std::vector<std::string> m_args;
 
 public:
-    PrototypeAST(std::unique_ptr<GeneratorData> t_generator,
+    PrototypeAST(std::shared_ptr<GeneratorData> t_generator,
                  const std::string& t_name,
                  std::vector<std::string> t_args
                  ): m_generator(std::move(t_generator)), m_name(t_name), m_args(std::move(t_args)) {}
@@ -180,12 +188,12 @@ public:
 
 class FunctionAST {
 private:
-    std::unique_ptr<GeneratorData> m_generator;
+    std::shared_ptr<GeneratorData> m_generator;
     std::unique_ptr<PrototypeAST> m_prototype;
     std::unique_ptr<SyntaxTree> m_body;
 
 public:
-    FunctionAST(std::unique_ptr<GeneratorData> t_generator,
+    FunctionAST(std::shared_ptr<GeneratorData> t_generator,
                 std::unique_ptr<PrototypeAST> t_prototype,
                 std::unique_ptr<SyntaxTree> t_body
                 ): m_generator(std::move(t_generator)), 

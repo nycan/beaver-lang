@@ -5,15 +5,17 @@
 #include "syntaxtree.hpp"
 #include <iostream>
 #include <cctype>
-#include <map>
 
 class Parser{
 private:
     Lexer m_lexer;
-    std::unique_ptr<GeneratorData> m_genData;
+    std::shared_ptr<GeneratorData> m_genData;
 
 public:
-    Parser(Lexer& t_lexer): m_lexer(t_lexer) {}
+    Parser(Lexer& t_lexer, std::shared_ptr<GeneratorData> t_genData):
+        m_lexer(t_lexer), m_genData(std::move(t_genData)) {}
+    ~Parser() = default;
+
     std::unique_ptr<SyntaxTree> parseNum();
     std::unique_ptr<SyntaxTree> parseExpression();
     std::unique_ptr<SyntaxTree> parseParens();
@@ -244,15 +246,21 @@ void Parser::operator()(){
             case Token::ENDFILE:
                 return;
             case Token::FUNC:
-                if(parseDefinition()){
-                    fprintf(stderr,"Successfully parsed function definition.\n");
+                if(auto resAST = parseDefinition()){
+                    if(auto* resIR = resAST->codegen()){
+                        std::cerr << "Successfully parsed function definition.\n";
+                        resIR->print(llvm::errs());
+                    }
                 } else {
                     m_lexer.nextToken();
                 }
                 break;
             case Token::EXTERN:
-                if(parseExtern()){
-                    fprintf(stderr,"Successfully parsed extern.\n");
+                if(auto resAST = parseExtern()){
+                    if(auto* resIR = resAST->codegen()){
+                        std::cerr << "Successfully parsed extern.\n";
+                        resIR->print(llvm::errs());
+                    }
                 } else {
                     m_lexer.nextToken();
                 }
@@ -261,8 +269,12 @@ void Parser::operator()(){
                 if(m_lexer.prevChar()==';'){
                     m_lexer.nextToken();
                 } else {
-                    if(parseTopLevel()){
-                        fprintf(stderr,"Successfully parsed top-level expression.\n");
+                    if(auto resAST = parseTopLevel()){
+                        if(auto* resIR = resAST->codegen()){
+                            std::cerr << "Successfully parsed top-level expression.\n";
+                            resIR->print(llvm::errs());
+                            resIR->removeFromParent();
+                        }
                     } else {
                         m_lexer.nextToken();
                     }
@@ -270,6 +282,8 @@ void Parser::operator()(){
                 break;
         }
     }
+
+    m_genData->m_module->print(llvm::errs(),nullptr);
 }
 
 #endif
