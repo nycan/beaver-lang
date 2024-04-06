@@ -10,6 +10,7 @@
 class Parser{
 private:
     Lexer m_lexer;
+    std::unique_ptr<GeneratorData> m_genData;
 
 public:
     Parser(Lexer& t_lexer): m_lexer(t_lexer) {}
