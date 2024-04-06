@@ -42,7 +42,7 @@ public:
     NumberAST(std::unique_ptr<GeneratorData> t_generator, const double t_value):
         SyntaxTree(std::move(t_generator)), m_value(t_value) {}
     llvm::Value* codegen() override {
-        return llvm::ConstantFP::get(*(m_generator->m_context),llvm::APFloat(m_value));
+        return llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(m_value));
     };
 };
 
@@ -92,12 +92,12 @@ public:
             case '<':
                 return m_generator->m_builder->CreateUIToFP(
                     m_generator->m_builder->CreateFCmpULT(leftCode,rightCode),
-                    llvm::Type::getDoubleTy(*(m_generator->m_context))
+                    llvm::Type::getDoubleTy(*m_generator->m_context)
                 );
             case '>':
                 return m_generator->m_builder->CreateUIToFP(
                     m_generator->m_builder->CreateFCmpULT(leftCode,rightCode),
-                    llvm::Type::getDoubleTy(*(m_generator->m_context))
+                    llvm::Type::getDoubleTy(*m_generator->m_context)
                 );
             default:
                 std::cerr << "Unknown operator\n";
@@ -123,14 +123,14 @@ public:
             return nullptr;
         }
 
-        std::size_t numArgs = m_args.size();
+        size_t numArgs = m_args.size();
         if(calleeCode->arg_size() != numArgs){
             std::cerr << "Incorrect number of arguments\n";
             return nullptr;
         }
 
         std::vector<llvm::Value*> argsCode(numArgs);
-        for(unsigned int i = 0; i < numArgs; ++i){
+        for(size_t i = 0; i < numArgs; ++i){
             argsCode[i] = m_args[i]->codegen();
             if(!argsCode[i]){
                 return nullptr;
@@ -143,24 +143,92 @@ public:
 
 class PrototypeAST {
 private:
+    std::unique_ptr<GeneratorData> m_generator;
     std::string m_name;
     std::vector<std::string> m_args;
 
 public:
-    PrototypeAST(const std::string& t_name, std::vector<std::string> t_args):
-                 m_name(t_name), m_args(std::move(t_args)) {}
+    PrototypeAST(std::unique_ptr<GeneratorData> t_generator,
+                 const std::string& t_name,
+                 std::vector<std::string> t_args
+                 ): m_generator(std::move(t_generator)), m_name(t_name), m_args(std::move(t_args)) {}
+    ~PrototypeAST() = default;
     const std::string& getName() const {return m_name;}
+
+    llvm::Function* codegen() {
+        //all doubles for now
+        std::vector<llvm::Type*> tmpType(m_args.size(),llvm::Type::getDoubleTy(*m_generator->m_context));
+        
+        llvm::FunctionType* funcType = llvm::FunctionType::get(
+            llvm::Type::getDoubleTy(*m_generator->m_context),
+            tmpType,
+            false
+        );
+
+        llvm::Function* funcCode = llvm::Function::Create(
+            funcType, llvm::Function::InternalLinkage, m_name, m_generator->m_module.get()
+        );
+
+        size_t it = 0;
+        for(auto& arg : funcCode->args()){
+            arg.setName(m_args[it++]);
+        }
+
+        return funcCode;
+    }
 };
 
 class FunctionAST {
 private:
+    std::unique_ptr<GeneratorData> m_generator;
     std::unique_ptr<PrototypeAST> m_prototype;
     std::unique_ptr<SyntaxTree> m_body;
 
 public:
-    FunctionAST(std::unique_ptr<PrototypeAST> t_prototype,
+    FunctionAST(std::unique_ptr<GeneratorData> t_generator,
+                std::unique_ptr<PrototypeAST> t_prototype,
                 std::unique_ptr<SyntaxTree> t_body
-                ): m_prototype(std::move(t_prototype)), m_body(std::move(t_body)) {}
+                ): m_generator(std::move(t_generator)), 
+                   m_prototype(std::move(t_prototype)), m_body(std::move(t_body)) {}
+    ~FunctionAST() = default;
+
+    llvm::Function* codegen(){
+        //check for existing function
+        llvm::Function* funcCode = m_generator->m_module->getFunction(m_prototype->getName());
+
+        //create if it doesn't exist
+        if(!funcCode){
+            funcCode = m_prototype->codegen();
+        }
+
+        if(!funcCode){
+            return nullptr;
+        }
+        if(!funcCode->empty()){
+            std::cerr << "Cannot redefine function.\n";
+            return nullptr;
+        }
+
+        llvm::BasicBlock* block = llvm::BasicBlock::Create(
+            *m_generator->m_context, "", funcCode
+        );
+        m_generator->m_builder->SetInsertPoint(block);
+        
+        m_generator->m_namedValues.clear();
+        for(auto& arg : funcCode->args()){
+            m_generator->m_namedValues[static_cast<std::string>(arg.getName())] = &arg;
+        }
+
+        if(llvm::Value* retVal = m_body->codegen()){
+            m_generator->m_builder->CreateRet(retVal);
+
+            llvm::verifyFunction(*funcCode);
+            return funcCode;
+        }
+
+        funcCode->eraseFromParent();
+        return nullptr;
+    }
 };
 
 #endif
