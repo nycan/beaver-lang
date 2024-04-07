@@ -27,20 +27,5 @@ llvm_map_components_to_libnames(
   native
 )
 
-# set(LLVM_LINK_COMPONENTS
-#   Analysis
-#   Core
-#   ExecutionEngine
-#   InstCombine
-#   Object
-#   OrcJIT
-#   RuntimeDyld
-#   ScalarOpts
-#   Support
-#   native
-#   )
-
-add_compile_options(-stdlib=libc++)
-
 add_executable(testlang src/main.cpp)
 target_link_libraries(testlang ${llvm_libs} ${targets})
