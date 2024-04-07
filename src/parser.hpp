@@ -192,9 +192,22 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
         return nullptr;
     }
     std::vector<std::string> args;
-    while(m_lexer.nextToken() == Token::IDENTIFIER){
+    do {
+        //identifier
+        m_lexer.nextToken();
+        if(m_lexer.prevChar() == ')'){
+            fprintf(stderr,"Expected identifier before ')'\n");
+            return nullptr;
+        }
+        if(m_lexer.getTok() != Token::IDENTIFIER){
+            fprintf(stderr,"Unexpected token in prototype\n");
+            return nullptr;
+        }
         args.push_back(m_lexer.getIdentifier());
-    }
+
+        //separator
+        m_lexer.nextToken();
+    } while (m_lexer.prevChar() == ',');
     if(m_lexer.prevChar() != ')'){
         fprintf(stderr,"Expected ')'\n");
         return nullptr;
@@ -213,7 +226,6 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition(){
     if(!prototype){
         return nullptr;
     }
-
     if(auto expr = parseExpression()){
         return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(expr));
     }
