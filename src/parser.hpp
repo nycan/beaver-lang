@@ -9,10 +9,10 @@
 class Parser{
 private:
     Lexer m_lexer;
-    std::shared_ptr<GeneratorData> m_genData;
+    std::shared_ptr<Generator> m_genData;
 
 public:
-    Parser(Lexer& t_lexer, std::shared_ptr<GeneratorData> t_genData):
+    Parser(Lexer& t_lexer, std::shared_ptr<Generator> t_genData):
         m_lexer(t_lexer), m_genData(std::move(t_genData)) {}
     ~Parser() = default;
 
@@ -283,7 +283,7 @@ void Parser::operator()(){
         }
     }
 
-    m_genData->m_module->print(llvm::errs(),nullptr);
+    m_genData->print();
 }
 
 #endif

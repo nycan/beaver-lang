@@ -4,6 +4,9 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
+set(LLVM_DIR /usr/local/Cellar/llvm/17.0.6_1/lib/cmake/llvm)
+
 project(testlang VERSION 0.1
                  DESCRIPTION "compiler testing"
                  LANGUAGES C CXX)
@@ -14,9 +17,30 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 include_directories(${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(testlang src/main.cpp)
+llvm_map_components_to_libnames(
+  llvm_libs
+  core
+  orcjit
+  native
+)
 
-llvm_map_components_to_libnames(llvm_libs support core irreader)
-target_link_libraries(testlang ${llvm_libs})
+# set(LLVM_LINK_COMPONENTS
+#   Analysis
+#   Core
+#   ExecutionEngine
+#   InstCombine
+#   Object
+#   OrcJIT
+#   RuntimeDyld
+#   ScalarOpts
+#   Support
+#   native
+#   )
+
+add_compile_options(-stdlib=libc++)
+
+add_executable(testlang src/main.cpp)
+target_link_libraries(testlang ${llvm_libs} ${targets})

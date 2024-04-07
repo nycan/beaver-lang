@@ -12,32 +12,83 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Scalar/Reassociate.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #include <string>
 #include <vector>
 #include <memory>
 #include <iostream>
 #include <map>
 
-class GeneratorData{
+class Generator{
 public:
     std::unique_ptr<llvm::LLVMContext> m_context;
     std::unique_ptr<llvm::IRBuilder<>> m_builder;
     std::unique_ptr<llvm::Module> m_module;
     std::map<std::string,llvm::Value*> m_namedValues;
 
-    GeneratorData(){
+    std::unique_ptr<llvm::FunctionPassManager> m_funcPass;
+    std::unique_ptr<llvm::LoopAnalysisManager> m_loopAnalyzer;
+    std::unique_ptr<llvm::FunctionAnalysisManager> m_funcAnalyzer;
+    std::unique_ptr<llvm::CGSCCAnalysisManager> m_callAnalyzer;
+    std::unique_ptr<llvm::ModuleAnalysisManager> m_moduleAnalyzer;
+    std::unique_ptr<llvm::PassInstrumentationCallbacks> m_callbacks;
+    std::unique_ptr<llvm::StandardInstrumentations> m_instrumentations;
+    
+    llvm::ModulePassManager m_optimizer;
+
+    Generator(){
         m_context = std::make_unique<llvm::LLVMContext>();
-        m_module = std::make_unique<llvm::Module>("",*m_context);
+        m_module = std::make_unique<llvm::Module>("testlang JIT",*m_context);
         m_builder = std::make_unique<llvm::IRBuilder<>>(*m_context);
+
+        m_funcPass = std::make_unique<llvm::FunctionPassManager>();
+        m_loopAnalyzer = std::make_unique<llvm::LoopAnalysisManager>();
+        m_funcAnalyzer = std::make_unique<llvm::FunctionAnalysisManager>();
+        m_callAnalyzer = std::make_unique<llvm::CGSCCAnalysisManager>();
+        m_moduleAnalyzer = std::make_unique<llvm::ModuleAnalysisManager>();
+        m_callbacks = std::make_unique<llvm::PassInstrumentationCallbacks>();
+        m_instrumentations = std::make_unique<llvm::StandardInstrumentations>(
+            *m_context, true
+        );
+        
+        m_instrumentations->registerCallbacks(*m_callbacks, m_moduleAnalyzer.get());
+
+        m_funcPass->addPass(llvm::InstCombinePass());
+        m_funcPass->addPass(llvm::ReassociatePass());
+        m_funcPass->addPass(llvm::GVNPass());
+        m_funcPass->addPass(llvm::SimplifyCFGPass());
+
+        llvm::PassBuilder passBuilder;
+        passBuilder.registerModuleAnalyses(*m_moduleAnalyzer);
+        passBuilder.registerCGSCCAnalyses(*m_callAnalyzer);
+        passBuilder.registerFunctionAnalyses(*m_funcAnalyzer);
+        passBuilder.registerLoopAnalyses(*m_loopAnalyzer);
+        passBuilder.crossRegisterProxies(
+            *m_loopAnalyzer,*m_funcAnalyzer,*m_callAnalyzer,*m_moduleAnalyzer
+        );
+
+        m_optimizer = passBuilder.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2);
+    }
+
+    inline void print(){
+        m_module->print(llvm::errs(),nullptr);
     }
 };
 
 class SyntaxTree{
 public:
-    std::shared_ptr<GeneratorData> m_generator;
+    std::shared_ptr<Generator> m_generator;
 
 public:
-    SyntaxTree(std::shared_ptr<GeneratorData> t_generator): m_generator(std::move(t_generator)) {}
+    SyntaxTree(std::shared_ptr<Generator> t_generator): m_generator(std::move(t_generator)) {}
     virtual ~SyntaxTree() = default;
     virtual llvm::Value* codegen() = 0;
 };
@@ -47,7 +98,7 @@ private:
     double m_value;
 
 public:
-    NumberAST(std::shared_ptr<GeneratorData> t_generator, const double t_value):
+    NumberAST(std::shared_ptr<Generator> t_generator, const double t_value):
         SyntaxTree(std::move(t_generator)), m_value(t_value) {}
     llvm::Value* codegen() override {
         return llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(m_value));
@@ -59,7 +110,7 @@ private:
     std::string m_name;
 
 public:
-    VariableAST(std::shared_ptr<GeneratorData> t_generator, const std::string& t_name):
+    VariableAST(std::shared_ptr<Generator> t_generator, const std::string& t_name):
         SyntaxTree(std::move(t_generator)), m_name(t_name) {}
     llvm::Value* codegen() override {
         llvm::Value* variable = m_generator->m_namedValues[m_name];
@@ -76,7 +127,7 @@ private:
     std::unique_ptr<SyntaxTree> m_lhs, m_rhs;
 
 public:
-    BinaryOpAST(std::shared_ptr<GeneratorData> t_generator,
+    BinaryOpAST(std::shared_ptr<Generator> t_generator,
                 const char t_op,
                 std::unique_ptr<SyntaxTree> t_lhs,
                 std::unique_ptr<SyntaxTree> t_rhs
@@ -120,7 +171,7 @@ private:
     std::vector<std::unique_ptr<SyntaxTree>> m_args;
 
 public:
-    CallAST(std::shared_ptr<GeneratorData> t_generator,
+    CallAST(std::shared_ptr<Generator> t_generator,
             const std::string& t_callee,
             std::vector<std::unique_ptr<SyntaxTree>> t_args
             ): SyntaxTree(std::move(t_generator)), m_callee(t_callee), m_args(std::move(t_args)) {}
@@ -151,12 +202,12 @@ public:
 
 class PrototypeAST {
 private:
-    std::shared_ptr<GeneratorData> m_generator;
+    std::shared_ptr<Generator> m_generator;
     std::string m_name;
     std::vector<std::string> m_args;
 
 public:
-    PrototypeAST(std::shared_ptr<GeneratorData> t_generator,
+    PrototypeAST(std::shared_ptr<Generator> t_generator,
                  const std::string& t_name,
                  std::vector<std::string> t_args
                  ): m_generator(std::move(t_generator)), m_name(t_name), m_args(std::move(t_args)) {}
@@ -188,12 +239,12 @@ public:
 
 class FunctionAST {
 private:
-    std::shared_ptr<GeneratorData> m_generator;
+    std::shared_ptr<Generator> m_generator;
     std::unique_ptr<PrototypeAST> m_prototype;
     std::unique_ptr<SyntaxTree> m_body;
 
 public:
-    FunctionAST(std::shared_ptr<GeneratorData> t_generator,
+    FunctionAST(std::shared_ptr<Generator> t_generator,
                 std::unique_ptr<PrototypeAST> t_prototype,
                 std::unique_ptr<SyntaxTree> t_body
                 ): m_generator(std::move(t_generator)), 
@@ -231,6 +282,8 @@ public:
             m_generator->m_builder->CreateRet(retVal);
 
             llvm::verifyFunction(*funcCode);
+            m_generator->m_funcPass->run(*funcCode, *m_generator->m_funcAnalyzer);
+
             return funcCode;
         }
 
