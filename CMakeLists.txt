@@ -5,7 +5,6 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
-set(LLVM_DIR /usr/local/Cellar/llvm/17.0.6_1/lib/cmake/llvm)
 
 project(testlang VERSION 0.1
                  DESCRIPTION "compiler testing"

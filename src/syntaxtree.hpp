@@ -88,7 +88,7 @@ public:
     std::shared_ptr<Generator> m_generator;
 
 public:
-    SyntaxTree(std::shared_ptr<Generator> t_generator): m_generator(std::move(t_generator)) {}
+    SyntaxTree(std::shared_ptr<Generator> t_generator): m_generator(t_generator) {}
     virtual ~SyntaxTree() = default;
     virtual llvm::Value* codegen() = 0;
 };
@@ -99,7 +99,7 @@ private:
 
 public:
     NumberAST(std::shared_ptr<Generator> t_generator, const double t_value):
-        SyntaxTree(std::move(t_generator)), m_value(t_value) {}
+        SyntaxTree(t_generator), m_value(t_value) {}
     llvm::Value* codegen() override {
         return llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(m_value));
     };
@@ -111,7 +111,7 @@ private:
 
 public:
     VariableAST(std::shared_ptr<Generator> t_generator, const std::string& t_name):
-        SyntaxTree(std::move(t_generator)), m_name(t_name) {}
+        SyntaxTree(t_generator), m_name(t_name) {}
     llvm::Value* codegen() override {
         llvm::Value* variable = m_generator->m_namedValues[m_name];
         if (!variable){
@@ -131,7 +131,7 @@ public:
                 const char t_op,
                 std::unique_ptr<SyntaxTree> t_lhs,
                 std::unique_ptr<SyntaxTree> t_rhs
-                ): SyntaxTree(std::move(t_generator)), 
+                ): SyntaxTree(t_generator), 
                    m_op(t_op), m_lhs(std::move(t_lhs)), m_rhs(std::move(t_rhs)) {}
     llvm::Value* codegen() override {
         llvm::Value* leftCode = m_lhs->codegen();
@@ -174,7 +174,7 @@ public:
     CallAST(std::shared_ptr<Generator> t_generator,
             const std::string& t_callee,
             std::vector<std::unique_ptr<SyntaxTree>> t_args
-            ): SyntaxTree(std::move(t_generator)), m_callee(t_callee), m_args(std::move(t_args)) {}
+            ): SyntaxTree(t_generator), m_callee(t_callee), m_args(std::move(t_args)) {}
     llvm::Value* codegen() override {
         llvm::Function* calleeCode = m_generator->m_module->getFunction(m_callee); 
         if(!calleeCode){
@@ -210,7 +210,7 @@ public:
     PrototypeAST(std::shared_ptr<Generator> t_generator,
                  const std::string& t_name,
                  std::vector<std::string> t_args
-                 ): m_generator(std::move(t_generator)), m_name(t_name), m_args(std::move(t_args)) {}
+                 ): m_generator(t_generator), m_name(t_name), m_args(std::move(t_args)) {}
     ~PrototypeAST() = default;
     const std::string& getName() const {return m_name;}
 
@@ -295,7 +295,6 @@ public:
 
 class ConditionalAST : public SyntaxTree {
 private:
-    std::shared_ptr<Generator> m_generator;
     std::unique_ptr<SyntaxTree> m_condition, m_mainBlock, m_elseBlock;
 public:
     ConditionalAST(std::shared_ptr<Generator> t_generator,

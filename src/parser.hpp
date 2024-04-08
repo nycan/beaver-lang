@@ -13,7 +13,7 @@ private:
 
 public:
     Parser(Lexer& t_lexer, std::shared_ptr<Generator> t_genData):
-        m_lexer(t_lexer), m_genData(std::move(t_genData)) {}
+        m_lexer(t_lexer), m_genData(t_genData) {}
     ~Parser() = default;
 
     std::unique_ptr<SyntaxTree> parseNum();
@@ -113,9 +113,12 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
         }
     }
 
-    return std::make_unique<ConditionalAST>(
-        std::move(m_genData), std::move(condition),std::move(mainBlock),std::move(elseBlock)
+    std::cout << "DEBUG 1 " << m_genData << '\n';
+    auto a = std::make_unique<ConditionalAST>(
+        m_genData, std::move(condition),std::move(mainBlock),std::move(elseBlock)
     );
+    std::cout << "DEBUG 2 " << m_genData << '\n';
+    return a;
 }
 
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
@@ -274,7 +277,7 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
             "somethingThatIllProbablyForgetToChange", // Don't forget to change this
             std::vector<std::string>()
         );
-        return std::make_unique<FunctionAST>(std::move(m_genData), std::move(prototype),std::move(expr));
+        return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(expr));
     }
     return nullptr;
 }
@@ -282,7 +285,6 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
 //temporary main function
 void Parser::operator()(){
     m_lexer.nextToken();
-    std::cout << m_genData << '\n';
 
     while(true){
         switch(m_lexer.getTok()){
@@ -290,6 +292,7 @@ void Parser::operator()(){
                 return;
             case Token::FUNC:
                 if(auto resAST = parseDefinition()){
+                    std::cout << "DEBUG " << m_genData << '\n';
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed function definition.\n";
                         resIR->print(llvm::errs());
