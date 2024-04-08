@@ -176,7 +176,7 @@ public:
             std::vector<std::unique_ptr<SyntaxTree>> t_args
             ): SyntaxTree(std::move(t_generator)), m_callee(t_callee), m_args(std::move(t_args)) {}
     llvm::Value* codegen() override {
-        llvm::Function* calleeCode = m_generator->m_module->getFunction(m_callee);
+        llvm::Function* calleeCode = m_generator->m_module->getFunction(m_callee); 
         if(!calleeCode){
             std::cerr << "Unknown function\n";
             return nullptr;
@@ -247,11 +247,12 @@ public:
     FunctionAST(std::shared_ptr<Generator> t_generator,
                 std::unique_ptr<PrototypeAST> t_prototype,
                 std::unique_ptr<SyntaxTree> t_body
-                ): m_generator(std::move(t_generator)), 
+                ): m_generator(t_generator), 
                    m_prototype(std::move(t_prototype)), m_body(std::move(t_body)) {}
     ~FunctionAST() = default;
 
     llvm::Function* codegen(){
+        std::cout << m_generator << '\n';
         //check for existing function
         llvm::Function* funcCode = m_generator->m_module->getFunction(m_prototype->getName());
 
@@ -289,6 +290,85 @@ public:
 
         funcCode->eraseFromParent();
         return nullptr;
+    }
+};
+
+class ConditionalAST : public SyntaxTree {
+private:
+    std::shared_ptr<Generator> m_generator;
+    std::unique_ptr<SyntaxTree> m_condition, m_mainBlock, m_elseBlock;
+public:
+    ConditionalAST(std::shared_ptr<Generator> t_generator,
+                   std::unique_ptr<SyntaxTree> t_condition,
+                   std::unique_ptr<SyntaxTree> t_mainBlock,
+                   std::unique_ptr<SyntaxTree> t_elseBlock
+                   ): SyntaxTree(t_generator),
+                      m_condition(std::move(t_condition)),
+                      m_mainBlock(std::move(t_mainBlock)),
+                      m_elseBlock(std::move(t_elseBlock)) {}
+    ~ConditionalAST() = default;
+
+    llvm::Value* codegen() override {
+        //creates main block, else block, and merge block
+        //then assigns the correct branching
+
+        llvm::Value* conditionalCode = m_condition->codegen();
+        if(!conditionalCode){
+            return nullptr;
+        }
+        
+        //compare to 0
+        conditionalCode = m_generator->m_builder->CreateFCmpONE(
+            conditionalCode,
+            llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(0.0))
+        );
+
+        //create blocks
+        llvm::Function* functionCode = m_generator->m_builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* mainBB = llvm::BasicBlock::Create(*m_generator->m_context,"",functionCode);
+        llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*m_generator->m_context);
+        llvm::BasicBlock* mergedBB = llvm::BasicBlock::Create(*m_generator->m_context);
+
+        //create branch and assign to main block
+        m_generator->m_builder->CreateCondBr(conditionalCode,mainBB,elseBB);
+        m_generator->m_builder->SetInsertPoint(mainBB);
+
+        llvm::Value* mainCode = m_mainBlock->codegen();
+        if(!mainCode){
+            return nullptr;
+        }
+
+        m_generator->m_builder->CreateBr(mergedBB);
+
+        //create else block
+        elseBB = m_generator->m_builder->GetInsertBlock();
+
+        functionCode->insert(functionCode->end(),elseBB);
+        m_generator->m_builder->SetInsertPoint(elseBB);
+
+        //for now, just give "0" for an empty else block
+        llvm::Value* elseCode = llvm::ConstantFP::get(
+            *m_generator->m_context,llvm::APFloat(0.0)
+        );
+        if(m_elseBlock){
+            llvm::Value* elseCode = m_elseBlock->codegen();
+            if(!elseCode){
+                return nullptr;
+            }
+        }
+
+        m_generator->m_builder->CreateBr(mergedBB);
+        elseBB = m_generator->m_builder->GetInsertBlock();
+
+        //create merge block
+        functionCode->insert(functionCode->end(), mergedBB);
+        m_generator->m_builder->SetInsertPoint(mergedBB);
+        llvm::PHINode* phiNode = m_generator->m_builder->CreatePHI(
+            llvm::Type::getDoubleTy(*m_generator->m_context), 2
+        );
+        phiNode->addIncoming(mainCode, mainBB);
+        phiNode->addIncoming(elseCode, elseBB);
+        return phiNode;
     }
 };
 

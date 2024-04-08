@@ -20,6 +20,7 @@ public:
     std::unique_ptr<SyntaxTree> parseExpression();
     std::unique_ptr<SyntaxTree> parseParens();
     std::unique_ptr<SyntaxTree> parseIdentifier();
+    std::unique_ptr<SyntaxTree> parseConditional();
     std::unique_ptr<SyntaxTree> handleUnknown();
     std::unique_ptr<SyntaxTree> parseMain();
     int BinopPrecedence();
@@ -90,6 +91,33 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
     return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
+std::unique_ptr<SyntaxTree> Parser::parseConditional(){
+    m_lexer.nextToken();
+
+    auto condition = parseExpression();
+    if(!condition){
+        return nullptr;
+    }
+
+    auto mainBlock = parseExpression();
+    if(!mainBlock){ 
+        return nullptr;
+    }
+
+    std::unique_ptr<SyntaxTree> elseBlock = nullptr;
+    if(m_lexer.getTok() == Token::ELSE){
+        m_lexer.nextToken();
+        elseBlock = parseExpression();
+        if(!elseBlock){
+            return nullptr;
+        }
+    }
+
+    return std::make_unique<ConditionalAST>(
+        std::move(m_genData), std::move(condition),std::move(mainBlock),std::move(elseBlock)
+    );
+}
+
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
     switch(m_lexer.prevChar()){
         case '(':
@@ -107,6 +135,8 @@ std::unique_ptr<SyntaxTree> Parser::parseMain(){
             return parseIdentifier();
         case Token::NUMBER:
             return parseNum();
+        case Token::IF:
+            return parseConditional();
         default:
             return handleUnknown();
     }
@@ -244,14 +274,15 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
             "somethingThatIllProbablyForgetToChange", // Don't forget to change this
             std::vector<std::string>()
         );
-        return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(expr));
+        return std::make_unique<FunctionAST>(std::move(m_genData), std::move(prototype),std::move(expr));
     }
     return nullptr;
 }
 
 //temporary main function
 void Parser::operator()(){
-    m_lexer.nextToken();    
+    m_lexer.nextToken();
+    std::cout << m_genData << '\n';
 
     while(true){
         switch(m_lexer.getTok()){

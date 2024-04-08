@@ -10,7 +10,9 @@ enum class Token{
     FUNC,
     EXTERN,
     IDENTIFIER,
-    NUMBER
+    NUMBER,
+    IF,
+    ELSE
 };
 
 class Lexer{
@@ -55,6 +57,12 @@ public:
             }
             if(m_identifier=="extern"){
                 return Token::EXTERN;
+            }
+            if(m_identifier=="if"){
+                return Token::IF;
+            }
+            if(m_identifier=="else"){
+                return Token::ELSE;
             }
             return Token::IDENTIFIER;
         }
