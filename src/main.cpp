@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -6,6 +7,7 @@
 #include "llvm/TargetParser/Host.h"
 
 int main(){
+
     auto targetTriple = llvm::sys::getDefaultTargetTriple();
 
     llvm::InitializeAllTargetInfos();
@@ -36,7 +38,7 @@ int main(){
 
     auto outputFile = "output.o";
     std::error_code errorCode;
-    llvm::raw_fd_ostream(outputFile, errorCode, llvm::sys::fs::OF_None);
+    llvm::raw_fd_ostream outputStream(outputFile, errorCode, llvm::sys::fs::OF_None);
 
     if(errorCode){
         llvm::errs() << "Could not open file: " << errorCode.message();
@@ -46,4 +48,15 @@ int main(){
     Lexer lex;
     Parser parse(lex,generator);
     parse();
+
+    llvm::legacy::PassManager pass;
+    auto fileType = llvm::CodeGenFileType::ObjectFile;
+
+    if(targetMachine->addPassesToEmitFile(pass, outputStream, nullptr, fileType)){
+        llvm::errs() << "Invalid file type";
+        return 1;
+    }
+
+    pass.run(*generator->m_module);
+    outputStream.flush();
 }
