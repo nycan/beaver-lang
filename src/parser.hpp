@@ -246,6 +246,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
         fprintf(stderr,"Expected '('\n");
         return nullptr;
     }
+    m_lexer.nextToken();
     std::vector<std::string> args;
     if(m_lexer.prevChar() != ')'){
         while(true){
@@ -255,6 +256,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
                 return nullptr;
             }
             args.push_back(m_lexer.getIdentifier());
+            m_lexer.nextToken();
             
             // end of argument list
             if(m_lexer.prevChar() == ')'){
