@@ -252,7 +252,6 @@ public:
     ~FunctionAST() = default;
 
     llvm::Function* codegen(){
-        std::cout << m_generator << '\n';
         //check for existing function
         llvm::Function* funcCode = m_generator->m_module->getFunction(m_prototype->getName());
 
@@ -283,8 +282,7 @@ public:
             m_generator->m_builder->CreateRet(retVal);
 
             llvm::verifyFunction(*funcCode);
-            m_generator->m_funcPass->run(*funcCode, *m_generator->m_funcAnalyzer);
-
+            m_generator->m_funcPass->run(*funcCode, *(m_generator->m_funcAnalyzer));
             return funcCode;
         }
 
@@ -340,7 +338,7 @@ public:
         m_generator->m_builder->CreateBr(mergedBB);
 
         //create else block
-        elseBB = m_generator->m_builder->GetInsertBlock();
+        mainBB = m_generator->m_builder->GetInsertBlock();
 
         functionCode->insert(functionCode->end(),elseBB);
         m_generator->m_builder->SetInsertPoint(elseBB);

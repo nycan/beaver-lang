@@ -113,12 +113,9 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
         }
     }
 
-    std::cout << "DEBUG 1 " << m_genData << '\n';
-    auto a = std::make_unique<ConditionalAST>(
+    return std::make_unique<ConditionalAST>(
         m_genData, std::move(condition),std::move(mainBlock),std::move(elseBlock)
     );
-    std::cout << "DEBUG 2 " << m_genData << '\n';
-    return a;
 }
 
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
@@ -292,7 +289,6 @@ void Parser::operator()(){
                 return;
             case Token::FUNC:
                 if(auto resAST = parseDefinition()){
-                    std::cout << "DEBUG " << m_genData << '\n';
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed function definition.\n";
                         resIR->print(llvm::errs());
