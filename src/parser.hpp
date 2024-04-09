@@ -42,43 +42,53 @@ std::unique_ptr<SyntaxTree> Parser::parseNum(){
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseParens(){
+    // parse '('
     m_lexer.nextToken();
+
+    // parse inside expression
     auto exprResult = parseExpression();
     if (!exprResult){
         return nullptr;
     }
+
+    // parse ')'
     if(m_lexer.prevChar() != ')'){
         fprintf(stderr,"Missing ')'\n");
         return nullptr;
     }
     m_lexer.nextToken();
+
     return exprResult;
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
+    // parse identifier
     std::string idName = m_lexer.getIdentifier();
     m_lexer.nextToken();
 
-    //variable
+    // variable
     if(m_lexer.prevChar() != '('){
         return std::make_unique<VariableAST>(m_genData, idName);
     }
 
-    //function call
+    // function call
     m_lexer.nextToken();
     std::vector<std::unique_ptr<SyntaxTree>> args;
     if(m_lexer.prevChar() != ')'){
         while(true){
+            // parse argument
             if(auto argument = parseExpression()){
                 args.push_back(std::move(argument));
             } else {
                 return nullptr;
             }
             
+            // end of argument list
             if(m_lexer.prevChar() == ')'){
                 break;
             }
 
+            // separator
             if(m_lexer.prevChar() != ','){
                 fprintf(stderr,"Expected ')' or ',' in argument list.");
                 return nullptr;
@@ -87,23 +97,29 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
         }
     }
 
+    // parse ')'
     m_lexer.nextToken();
     return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseConditional(){
+    // parse 'if'
     m_lexer.nextToken();
 
+    // parse condition
     auto condition = parseExpression();
     if(!condition){
         return nullptr;
     }
 
+    // parse the "then"
     auto mainBlock = parseExpression();
     if(!mainBlock){ 
         return nullptr;
     }
 
+    // if an else block exists, parse it
+    // nullptr is used for a non-existant else block
     std::unique_ptr<SyntaxTree> elseBlock = nullptr;
     if(m_lexer.getTok() == Token::ELSE){
         m_lexer.nextToken();
@@ -118,6 +134,7 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
     );
 }
 
+// helper function for parseMain to parse the last character when the token is unknown
 std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
     switch(m_lexer.prevChar()){
         case '(':
@@ -129,6 +146,7 @@ std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
     }
 }
 
+// main parse function
 std::unique_ptr<SyntaxTree> Parser::parseMain(){
     switch(m_lexer.getTok()){
         case Token::IDENTIFIER:
@@ -142,6 +160,7 @@ std::unique_ptr<SyntaxTree> Parser::parseMain(){
     }
 }
 
+// assigns precedence to operations
 int Parser::BinopPrecedence(){ //TODO: replace this with something better
     switch(m_lexer.prevChar()){
         case '*':
@@ -168,20 +187,26 @@ std::unique_ptr<SyntaxTree> Parser::parseOpRHS(
     while(true){
         int precedence = BinopPrecedence();
 
-        //if it is lower precedence, then it will be parsed in a different call
+        // if it is lower precedence, then it will be parsed in a different call
+        // since unknown operators return -1, this handles the no-operation case
         if(precedence < t_minPrec){
             return t_leftSide;
         }
 
+        // parse operation
         char operation = m_lexer.prevChar();
         m_lexer.nextToken();
 
+        // parse right side
         auto rightSide = parseMain();
         if(!rightSide){
             return nullptr;
         }
 
+        // if the expression continues, parse it
         int nextPrec = BinopPrecedence();
+        // if the next operator is higher precedence, it needs to be handled before this one
+        // parse recursively
         if(precedence < nextPrec){
             rightSide = parseOpRHS(precedence+1, std::move(rightSide));
             if(!rightSide){
@@ -222,22 +247,30 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
         return nullptr;
     }
     std::vector<std::string> args;
-    do {
-        //identifier
-        m_lexer.nextToken();
-        if(m_lexer.prevChar() == ')'){
-            fprintf(stderr,"Expected identifier before ')'\n");
-            return nullptr;
-        }
-        if(m_lexer.getTok() != Token::IDENTIFIER){
-            fprintf(stderr,"Unexpected token in prototype\n");
-            return nullptr;
-        }
-        args.push_back(m_lexer.getIdentifier());
+    if(m_lexer.prevChar() != ')'){
+        while(true){
+            // parse argument
+            if(m_lexer.getTok() != Token::IDENTIFIER){
+                fprintf(stderr,"Unexpected token in prototype\n");
+                return nullptr;
+            }
+            args.push_back(m_lexer.getIdentifier());
+            
+            // end of argument list
+            if(m_lexer.prevChar() == ')'){
+                break;
+            }
 
-        //separator
-        m_lexer.nextToken();
-    } while (m_lexer.prevChar() == ',');
+            // separator
+            if(m_lexer.prevChar() != ','){
+                fprintf(stderr,"Expected ')' or ',' in argument list.");
+                return nullptr;
+            }
+            m_lexer.nextToken();
+        }
+    }
+
+    // parse ')'
     if(m_lexer.prevChar() != ')'){
         fprintf(stderr,"Expected ')'\n");
         return nullptr;
@@ -248,14 +281,16 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
 }
 
 std::unique_ptr<FunctionAST> Parser::parseDefinition(){
-    //function declaration
+    // function declaration
     m_lexer.nextToken();
 
-    //prototype
+    // prototype
     auto prototype = parsePrototype();
     if(!prototype){
         return nullptr;
     }
+
+    // body
     if(auto expr = parseExpression()){
         return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(expr));
     }
@@ -267,6 +302,7 @@ std::unique_ptr<PrototypeAST> Parser::parseExtern(){
     return parsePrototype();
 }
 
+// wrap top-level expressions in an anonymous prototype
 std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
     if(auto expr = parseExpression()){
         auto prototype = std::make_unique<PrototypeAST>(
@@ -328,4 +364,4 @@ void Parser::operator()(){
     m_genData->print();
 }
 
-#endif
+#endif // TESTLANG_PARSER_HPP

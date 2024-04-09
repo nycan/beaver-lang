@@ -27,13 +27,16 @@
 #include <iostream>
 #include <map>
 
+// class to store all the things needed for code generation & optimization
 class Generator{
 public:
+    // stuff for generation
     std::unique_ptr<llvm::LLVMContext> m_context;
     std::unique_ptr<llvm::IRBuilder<>> m_builder;
     std::unique_ptr<llvm::Module> m_module;
     std::map<std::string,llvm::Value*> m_namedValues;
 
+    // stuff for optimization
     std::unique_ptr<llvm::FunctionPassManager> m_funcPass;
     std::unique_ptr<llvm::LoopAnalysisManager> m_loopAnalyzer;
     std::unique_ptr<llvm::FunctionAnalysisManager> m_funcAnalyzer;
@@ -46,7 +49,7 @@ public:
 
     Generator(){
         m_context = std::make_unique<llvm::LLVMContext>();
-        m_module = std::make_unique<llvm::Module>("testlang JIT",*m_context);
+        m_module = std::make_unique<llvm::Module>("",*m_context);
         m_builder = std::make_unique<llvm::IRBuilder<>>(*m_context);
 
         m_funcPass = std::make_unique<llvm::FunctionPassManager>();
@@ -83,6 +86,7 @@ public:
     }
 };
 
+// base AST class
 class SyntaxTree{
 public:
     std::shared_ptr<Generator> m_generator;
@@ -113,14 +117,17 @@ public:
     VariableAST(std::shared_ptr<Generator> t_generator, const std::string& t_name):
         SyntaxTree(t_generator), m_name(t_name) {}
     llvm::Value* codegen() override {
+        // search in named variables
         llvm::Value* variable = m_generator->m_namedValues[m_name];
         if (!variable){
             std::cerr << "Unknown variable name.\n";
         }
+
         return variable;
     };
 };
 
+// binary operations
 class BinaryOpAST : public SyntaxTree{
 private:
     char m_op;
@@ -139,7 +146,7 @@ public:
         if(!leftCode || !rightCode){
             return nullptr;
         }
-        switch(m_op){
+        switch(m_op){ // this will probably be replaced at some point...
             case '+':
                 return m_generator->m_builder->CreateFAdd(leftCode,rightCode);
             case '-':
@@ -165,6 +172,7 @@ public:
     };
 };
 
+// function calls
 class CallAST : public SyntaxTree{
 private:
     std::string m_callee;
@@ -176,18 +184,21 @@ public:
             std::vector<std::unique_ptr<SyntaxTree>> t_args
             ): SyntaxTree(t_generator), m_callee(t_callee), m_args(std::move(t_args)) {}
     llvm::Value* codegen() override {
-        llvm::Function* calleeCode = m_generator->m_module->getFunction(m_callee); 
-        if(!calleeCode){
+        // search for the function being called
+        llvm::Function* calledFunction = m_generator->m_module->getFunction(m_callee); 
+        if(!calledFunction){
             std::cerr << "Unknown function\n";
             return nullptr;
         }
 
+        // check for number of arguments
         size_t numArgs = m_args.size();
-        if(calleeCode->arg_size() != numArgs){
+        if(calledFunction->arg_size() != numArgs){
             std::cerr << "Incorrect number of arguments\n";
             return nullptr;
         }
 
+        // generate code for each argument
         std::vector<llvm::Value*> argsCode(numArgs);
         for(size_t i = 0; i < numArgs; ++i){
             argsCode[i] = m_args[i]->codegen();
@@ -196,7 +207,7 @@ public:
             }
         }
 
-        return m_generator->m_builder->CreateCall(calleeCode, argsCode);
+        return m_generator->m_builder->CreateCall(calledFunction, argsCode);
     };
 };
 
@@ -224,10 +235,12 @@ public:
             false
         );
 
+        // add the function to the functions table
         llvm::Function* funcCode = llvm::Function::Create(
             funcType, llvm::Function::InternalLinkage, m_name, m_generator->m_module.get()
         );
 
+        // add the argument to the variables table
         size_t it = 0;
         for(auto& arg : funcCode->args()){
             arg.setName(m_args[it++]);
@@ -237,6 +250,7 @@ public:
     }
 };
 
+// function definitions
 class FunctionAST {
 private:
     std::shared_ptr<Generator> m_generator;
@@ -252,10 +266,10 @@ public:
     ~FunctionAST() = default;
 
     llvm::Function* codegen(){
-        //check for existing function
+        // check for existing function
         llvm::Function* funcCode = m_generator->m_module->getFunction(m_prototype->getName());
 
-        //create if it doesn't exist
+        // create if it doesn't exist
         if(!funcCode){
             funcCode = m_prototype->codegen();
         }
@@ -268,20 +282,25 @@ public:
             return nullptr;
         }
 
-        llvm::BasicBlock* block = llvm::BasicBlock::Create(
+        // parse the body
+        llvm::BasicBlock* block = llvm::BasicBlock::Create( // creates the "block" to be jumped to
             *m_generator->m_context, "", funcCode
         );
         m_generator->m_builder->SetInsertPoint(block);
         
+        // make the only named values the ones defined in the prototype
         m_generator->m_namedValues.clear();
         for(auto& arg : funcCode->args()){
             m_generator->m_namedValues[static_cast<std::string>(arg.getName())] = &arg;
         }
 
+        // parse body
         if(llvm::Value* retVal = m_body->codegen()){
-            m_generator->m_builder->CreateRet(retVal);
+            m_generator->m_builder->CreateRet(retVal); // for now, just return the expression
 
             llvm::verifyFunction(*funcCode);
+
+            //run optimizations
             m_generator->m_funcPass->run(*funcCode, *(m_generator->m_funcAnalyzer));
             return funcCode;
         }
@@ -291,6 +310,7 @@ public:
     }
 };
 
+// if/else
 class ConditionalAST : public SyntaxTree {
 private:
     std::unique_ptr<SyntaxTree> m_condition, m_mainBlock, m_elseBlock;
@@ -309,41 +329,48 @@ public:
         //creates main block, else block, and merge block
         //then assigns the correct branching
 
+        // condition
         llvm::Value* conditionalCode = m_condition->codegen();
         if(!conditionalCode){
             return nullptr;
         }
         
-        //compare to 0
+        // compare to 0
         conditionalCode = m_generator->m_builder->CreateFCmpONE(
             conditionalCode,
             llvm::ConstantFP::get(*m_generator->m_context,llvm::APFloat(0.0))
         );
 
-        //create blocks
+        // create blocks
         llvm::Function* functionCode = m_generator->m_builder->GetInsertBlock()->getParent();
         llvm::BasicBlock* mainBB = llvm::BasicBlock::Create(*m_generator->m_context,"",functionCode);
         llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*m_generator->m_context);
         llvm::BasicBlock* mergedBB = llvm::BasicBlock::Create(*m_generator->m_context);
 
-        //create branch and assign to main block
+        // create the conditional branch
         m_generator->m_builder->CreateCondBr(conditionalCode,mainBB,elseBB);
+
+        // create branch and assign to main block
         m_generator->m_builder->SetInsertPoint(mainBB);
 
+        // generate code for the main block
         llvm::Value* mainCode = m_mainBlock->codegen();
         if(!mainCode){
             return nullptr;
         }
 
+        // after it's finished, go to the merged block
         m_generator->m_builder->CreateBr(mergedBB);
 
-        //create else block
+        // in case insert point was changed during code generation
         mainBB = m_generator->m_builder->GetInsertBlock();
 
+        // create branch and assign to else block
         functionCode->insert(functionCode->end(),elseBB);
         m_generator->m_builder->SetInsertPoint(elseBB);
 
-        //for now, just give "0" for an empty else block
+        // generate code for the else block
+        // for now, just give "0" for an empty else block
         llvm::Value* elseCode = llvm::ConstantFP::get(
             *m_generator->m_context,llvm::APFloat(0.0)
         );
@@ -354,10 +381,13 @@ public:
             }
         }
 
+        //go back to merged blcok
         m_generator->m_builder->CreateBr(mergedBB);
+
+        // in case insert point was changed during code generation
         elseBB = m_generator->m_builder->GetInsertBlock();
 
-        //create merge block
+        // create merged block
         functionCode->insert(functionCode->end(), mergedBB);
         m_generator->m_builder->SetInsertPoint(mergedBB);
         llvm::PHINode* phiNode = m_generator->m_builder->CreatePHI(
@@ -369,4 +399,4 @@ public:
     }
 };
 
-#endif
+#endif // TESTLANG_SYNTAXTREE_HPP
