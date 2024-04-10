@@ -33,7 +33,7 @@ public:
         m_lexer(t_lexer), m_genData(t_genData) {}
     ~Parser() = default;
 
-    void operator()();
+    bool operator()();
 };
 
 std::unique_ptr<SyntaxTree> Parser::parseNum(){
@@ -54,7 +54,7 @@ std::unique_ptr<SyntaxTree> Parser::parseParens(){
 
     // parse ')'
     if(m_lexer.getChar() != ')'){
-        fprintf(stderr,"Missing ')'\n");
+        llvm::errs() << "Missing ')'\n";
         return nullptr;
     }
     m_lexer.nextToken();
@@ -91,7 +91,7 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
 
             // separator
             if(m_lexer.getChar() != ','){
-                fprintf(stderr,"Expected ')' or ',' in argument list.");
+                llvm::errs() << "Expected ')' or ',' in argument list.";
                 return nullptr;
             }
             m_lexer.nextToken();
@@ -142,7 +142,7 @@ std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
             return parseParens();
         default:
             std::cerr << m_lexer.getChar() << '\n';
-            fprintf(stderr,"Unknown token\n");
+            llvm::errs() << "Unknown token\n";
             return nullptr;
     }
 }
@@ -234,7 +234,7 @@ std::unique_ptr<SyntaxTree> Parser::parseExpression(){
 
 std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     if(m_lexer.getTok() != Token::IDENTIFIER){
-        fprintf(stderr,"Expected function name in prototype.\n");
+        llvm::errs() << "Expected function name in prototype.\n";
         return nullptr;
     }
     
@@ -244,7 +244,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
 
     //arguments
     if(m_lexer.getChar() != '('){
-        fprintf(stderr,"Expected '('\n");
+        llvm::errs() << "Expected '('\n";
         return nullptr;
     }
     m_lexer.nextToken();
@@ -253,7 +253,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
         while(true){
             // parse argument
             if(m_lexer.getTok() != Token::IDENTIFIER){
-                fprintf(stderr,"Unexpected token in prototype\n");
+                llvm::errs() << "Unexpected token in prototype\n";
                 return nullptr;
             }
             args.push_back(m_lexer.getIdentifier());
@@ -266,7 +266,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
 
             // separator
             if(m_lexer.getChar() != ','){
-                fprintf(stderr,"Expected ')' or ',' in argument list.");
+                llvm::errs() << "Expected ')' or ',' in argument list.";
                 return nullptr;
             }
             m_lexer.nextToken();
@@ -275,7 +275,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
 
     // parse ')'
     if(m_lexer.getChar() != ')'){
-        fprintf(stderr,"Expected ')'\n");
+        llvm::errs() << "Expected ')'\n";
         return nullptr;
     }
     m_lexer.nextToken();
@@ -319,8 +319,9 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
 }
 
 //temporary main function
-void Parser::operator()(){
+bool Parser::operator()(){
     m_lexer.nextToken();
+    bool hasErrors = false;
 
     while(true){
         switch(m_lexer.getTok()){
@@ -330,9 +331,11 @@ void Parser::operator()(){
                 if(auto resAST = parseDefinition()){
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed function definition.\n";
-                        resIR->print(llvm::errs());
+                    } else {
+                        hasErrors = true;
                     }
                 } else {
+                    hasErrors = true;
                     m_lexer.nextToken();
                 }
                 break;
@@ -340,9 +343,11 @@ void Parser::operator()(){
                 if(auto resAST = parseExtern()){
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed extern.\n";
-                        resIR->print(llvm::errs());
+                    } else {
+                        hasErrors = true;
                     }
                 } else {
+                    hasErrors = true;
                     m_lexer.nextToken();
                 }
                 break;
@@ -353,18 +358,19 @@ void Parser::operator()(){
                     if(auto resAST = parseTopLevel()){
                         if(auto* resIR = resAST->codegen()){
                             std::cerr << "Successfully parsed top-level expression.\n";
-                            resIR->print(llvm::errs());
                             resIR->removeFromParent();
+                        } else {
+                            hasErrors = true;
                         }
                     } else {
+                        hasErrors = true;
                         m_lexer.nextToken();
                     }
                 }
                 break;
         }
     }
-
-    m_genData->print();
+    return hasErrors;
 }
 
 #endif // TESTLANG_PARSER_HPP

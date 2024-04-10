@@ -24,7 +24,7 @@ protected:
     unsigned m_charPos;
 
     // way to get the next character depends on input method
-    virtual char processChar() = 0;
+    virtual char processChar() {return getchar();};
 
 private:
     // stored processed values
