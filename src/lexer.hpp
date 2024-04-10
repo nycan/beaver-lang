@@ -18,6 +18,14 @@ enum class Token{
 };
 
 class Lexer{
+protected:
+    // for error handling
+    unsigned m_lineNumber;
+    unsigned m_charPos;
+
+    // way to get the next character depends on input method
+    virtual char processChar() = 0;
+
 private:
     // stored processed values
     std::string m_identifier;
@@ -27,28 +35,6 @@ private:
     Token m_currTok;
     char m_currChar;
     char m_lastChar;
-
-protected:
-    // for error handling
-    unsigned m_lineNumber;
-    unsigned m_charPos;
-
-public:
-    Lexer(): m_identifier(""), m_numVal(0), 
-             m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' '),
-             m_lineNumber(1), m_charPos(1) {}
-    ~Lexer() = default;
-
-    inline std::string getIdentifier() const {return m_identifier;}
-    inline double getNum() const {return m_numVal;}
-    inline Token getTok() const {return m_currTok;}
-    inline char getChar() const {return m_lastChar;}
-
-    inline unsigned getLine() const {return m_lineNumber;}
-    inline unsigned getPos() const {return m_charPos;}
-
-    // way to get the next character depends on input method
-    virtual char processChar() = 0;
 
     // gives the lexer the next character, updates variables
     char nextChar(){
@@ -126,6 +112,20 @@ public:
         return Token::UNKNOWN;
     }
 
+public:
+    Lexer(): m_identifier(""), m_numVal(0), 
+             m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' '),
+             m_lineNumber(1), m_charPos(1) {}
+    ~Lexer() = default;
+
+    inline std::string getIdentifier() const {return m_identifier;}
+    inline double getNum() const {return m_numVal;}
+    inline Token getTok() const {return m_currTok;}
+    inline char getChar() const {return m_lastChar;}
+
+    inline unsigned getLine() const {return m_lineNumber;}
+    inline unsigned getPos() const {return m_charPos;}
+
     //almost the same as processToken(), but also update m_currTok.
     inline Token nextToken(){
         return m_currTok = processToken();
@@ -137,24 +137,26 @@ class FileLexer : public Lexer {
 private:
     std::ifstream m_fileStream;
 
+protected:
+    inline char processChar() override {
+        return m_fileStream.get();
+    }
+
 public:
     FileLexer(std::string t_fileName): Lexer(), m_fileStream(t_fileName) {}
     ~FileLexer() = default;
-
-    char processChar() override {
-        return m_fileStream.get();
-    }
 };
 
 // read from stdin
 class StdinLexer : public Lexer {
+protected:
+    inline char processChar() override {
+        return getchar();
+    }
+
 public:
     StdinLexer(): Lexer() {}
     ~StdinLexer() = default;
-
-    char processChar() override {
-        return getchar();
-    }
 };
 
 #endif // TESTLANG_LEXER_HPP
