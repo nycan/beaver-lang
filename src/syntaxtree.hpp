@@ -214,12 +214,13 @@ public:
 // if/else
 class ConditionalAST : public SyntaxTree {
 private:
-    std::unique_ptr<SyntaxTree> m_condition, m_mainBlock, m_elseBlock;
+    std::unique_ptr<SyntaxTree> m_condition;
+    std::unique_ptr<BlockAST> m_mainBlock, m_elseBlock;
 public:
     ConditionalAST(std::shared_ptr<Generator> t_generator,
                    std::unique_ptr<SyntaxTree> t_condition,
-                   std::unique_ptr<SyntaxTree> t_mainBlock,
-                   std::unique_ptr<SyntaxTree> t_elseBlock
+                   std::unique_ptr<BlockAST> t_mainBlock,
+                   std::unique_ptr<BlockAST> t_elseBlock
                    ): SyntaxTree(t_generator),
                       m_condition(std::move(t_condition)),
                       m_mainBlock(std::move(t_mainBlock)),
@@ -244,17 +245,15 @@ public:
 
         // create blocks
         llvm::Function* functionCode = m_generator->m_builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock* mainBB = llvm::BasicBlock::Create(*m_generator->m_context,"",functionCode);
-        llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*m_generator->m_context);
+        m_mainBlock->m_block = llvm::BasicBlock::Create(*m_generator->m_context,"",functionCode);
+        m_elseBlock->m_block = llvm::BasicBlock::Create(*m_generator->m_context);
         llvm::BasicBlock* mergedBB = llvm::BasicBlock::Create(*m_generator->m_context);
 
         // create the conditional branch
-        m_generator->m_builder->CreateCondBr(conditionalCode,mainBB,elseBB);
+        m_generator->m_builder->CreateCondBr(
+            conditionalCode,m_mainBlock->m_block,m_elseBlock->m_block
+        );
 
-        // create branch and assign to main block
-        m_generator->m_builder->SetInsertPoint(mainBB);
-
-        // generate code for the main block
         llvm::Value* mainCode = m_mainBlock->codegen();
         if(!mainCode){
             return nullptr;
@@ -263,12 +262,8 @@ public:
         // after it's finished, go to the merged block
         m_generator->m_builder->CreateBr(mergedBB);
 
-        // in case insert point was changed during code generation
-        mainBB = m_generator->m_builder->GetInsertBlock();
-
         // create branch and assign to else block
-        functionCode->insert(functionCode->end(),elseBB);
-        m_generator->m_builder->SetInsertPoint(elseBB);
+        functionCode->insert(functionCode->end(),m_elseBlock->m_block);
 
         // generate code for the else block
         // for now, just give "0" for an empty else block
@@ -280,6 +275,8 @@ public:
             if(!elseCode){
                 return nullptr;
             }
+        } else {
+            m_generator->m_builder->SetInsertPoint(m_elseBlock->m_block);
         }
 
         //go back to merged blcok
@@ -339,17 +336,35 @@ public:
     }
 };
 
+// return values
+class ReturnAST : public SyntaxTree{
+private:
+    std::unique_ptr<SyntaxTree> m_expression;
+
+public:
+    ReturnAST(std::shared_ptr<Generator> t_generator, std::unique_ptr<SyntaxTree> t_expression):
+        SyntaxTree(t_generator), m_expression(std::move(t_expression)) {}
+    ~ReturnAST() = default;
+
+    llvm::Value* codegen() override {
+        if(auto exprCode = m_expression->codegen()){
+            return m_generator->m_builder->CreateRet(exprCode);
+        }
+        return nullptr;
+    }
+};
+
 // function definitions
 class FunctionAST {
 private:
     std::shared_ptr<Generator> m_generator;
     std::unique_ptr<PrototypeAST> m_prototype;
-    std::unique_ptr<SyntaxTree> m_body;
+    std::unique_ptr<BlockAST> m_body;
 
 public:
     FunctionAST(std::shared_ptr<Generator> t_generator,
                 std::unique_ptr<PrototypeAST> t_prototype,
-                std::unique_ptr<SyntaxTree> t_body
+                std::unique_ptr<BlockAST> t_body
                 ): m_generator(t_generator), 
                    m_prototype(std::move(t_prototype)), m_body(std::move(t_body)) {}
     ~FunctionAST() = default;
@@ -372,10 +387,9 @@ public:
         }
 
         // parse the body
-        llvm::BasicBlock* block = llvm::BasicBlock::Create( // creates the "block" to be jumped to
+        m_body->m_block = llvm::BasicBlock::Create( // creates the "block" to be jumped to
             *m_generator->m_context, "", funcCode
         );
-        m_generator->m_builder->SetInsertPoint(block);
         
         // make the only named values the ones defined in the prototype
         m_generator->m_namedValues.clear();
@@ -384,9 +398,7 @@ public:
         }
 
         // parse body
-        if(llvm::Value* retVal = m_body->codegen()){
-            m_generator->m_builder->CreateRet(retVal); // for now, just return the expression
-
+        if(llvm::Value* bodyCode = m_body->codegen()){
             llvm::verifyFunction(*funcCode);
 
             //run optimizations
@@ -399,6 +411,7 @@ public:
     }
 };
 
+// blocks for conditionals, functions, loops, etc.
 class BlockAST {
 private:
     std::shared_ptr<Generator> m_generator;
@@ -419,6 +432,8 @@ public:
                 return nullptr;
             }
         }
+
+        return m_block = m_generator->m_builder->GetInsertBlock();
     }
 };
 

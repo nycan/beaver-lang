@@ -15,6 +15,7 @@ private:
     std::unique_ptr<SyntaxTree> parseExpression();
     std::unique_ptr<SyntaxTree> parseParens();
     std::unique_ptr<SyntaxTree> parseIdentifier();
+    std::unique_ptr<BlockAST> parseBlock();
     std::unique_ptr<SyntaxTree> parseConditional();
     std::unique_ptr<SyntaxTree> handleUnknown();
     std::unique_ptr<SyntaxTree> parseMain();
@@ -24,6 +25,7 @@ private:
         std::unique_ptr<SyntaxTree> t_leftSide
     );
     std::unique_ptr<PrototypeAST> parsePrototype();
+    std::unique_ptr<SyntaxTree> parseReturn();
     std::unique_ptr<FunctionAST> parseDefinition();
     std::unique_ptr<PrototypeAST> parseExtern();
     std::unique_ptr<FunctionAST> parseTopLevel();
@@ -103,6 +105,32 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
     return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
+std::unique_ptr<BlockAST> Parser::parseBlock(){
+    // parse '{'
+    if(m_lexer.getChar() != '{'){
+        llvm::errs() << "Expected '{'.";
+        return nullptr;
+    }
+
+    m_lexer.nextToken();
+
+    std::vector<std::unique_ptr<SyntaxTree>> lines;
+    while(m_lexer.getChar() != '}'){
+        if(m_lexer.getChar() == EOF){
+            llvm::errs() << "Expected '}'.";
+            return nullptr;
+        }
+
+        if(auto lineAST = parseMain()){
+            lines.push_back(std::move(lineAST));
+        } else {
+            return nullptr;
+        }
+    }
+
+    return std::make_unique<BlockAST>(m_genData,std::move(lines));
+}
+
 std::unique_ptr<SyntaxTree> Parser::parseConditional(){
     // parse 'if'
     m_lexer.nextToken();
@@ -114,17 +142,19 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
     }
 
     // parse the "then"
-    auto mainBlock = parseExpression();
+    auto mainBlock = parseBlock();
     if(!mainBlock){ 
         return nullptr;
     }
 
     // if an else block exists, parse it
     // nullptr is used for a non-existant else block
-    std::unique_ptr<SyntaxTree> elseBlock = nullptr;
+    std::unique_ptr<BlockAST> elseBlock = nullptr;
     if(m_lexer.getTok() == Token::ELSE){
+        // parse "else"
         m_lexer.nextToken();
-        elseBlock = parseExpression();
+
+        elseBlock = parseBlock();
         if(!elseBlock){
             return nullptr;
         }
@@ -156,6 +186,8 @@ std::unique_ptr<SyntaxTree> Parser::parseMain(){
             return parseNum();
         case Token::IF:
             return parseConditional();
+        case Token::RETURN:
+            return parseReturn();
         default:
             return handleUnknown();
     }
@@ -283,6 +315,16 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     return std::make_unique<PrototypeAST>(m_genData, funcName, std::move(args));
 }
 
+std::unique_ptr<SyntaxTree> Parser::parseReturn(){
+    // parse "ret"
+    m_lexer.nextToken();
+
+    if(auto resAST = parseMain()){
+        return std::make_unique<ReturnAST>(m_genData,std::move(resAST));
+    }
+    return nullptr;
+}
+
 std::unique_ptr<FunctionAST> Parser::parseDefinition(){
     // function declaration
     m_lexer.nextToken();
@@ -294,8 +336,8 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition(){
     }
 
     // body
-    if(auto expr = parseExpression()){
-        return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(expr));
+    if(auto block = parseBlock()){
+        return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(block));
     }
     return nullptr;
 }

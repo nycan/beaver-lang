@@ -14,7 +14,8 @@ enum class Token{
     IDENTIFIER,
     NUMBER,
     IF,
-    ELSE
+    ELSE,
+    RETURN
 };
 
 class Lexer{
@@ -76,6 +77,9 @@ private:
             }
             if(m_identifier=="else"){
                 return Token::ELSE;
+            }
+            if(m_identifier=="ret"){
+                return Token::RETURN;
             }
             // if not a keyword, it's an identifier
             return Token::IDENTIFIER;
