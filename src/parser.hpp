@@ -11,11 +11,11 @@ private:
     Lexer m_lexer;
     std::shared_ptr<Generator> m_genData;
 
+    std::vector<std::unique_ptr<SyntaxTree>> parseBlock();
     std::unique_ptr<SyntaxTree> parseNum();
     std::unique_ptr<SyntaxTree> parseExpression();
     std::unique_ptr<SyntaxTree> parseParens();
     std::unique_ptr<SyntaxTree> parseIdentifier();
-    std::unique_ptr<BlockAST> parseBlock();
     std::unique_ptr<SyntaxTree> parseConditional();
     std::unique_ptr<SyntaxTree> handleUnknown();
     std::unique_ptr<SyntaxTree> parseMain();
@@ -37,6 +37,24 @@ public:
 
     bool operator()();
 };
+
+// helper function for blocks
+std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock(){
+    // parse '{'
+    if(m_lexer.getChar() != '{'){
+        llvm::errs() << "Expected body.";
+        return std::vector<std::unique_ptr<SyntaxTree>>();
+    }
+    m_lexer.nextToken();
+
+    // parse body
+    std::vector<std::unique_ptr<SyntaxTree>> result;
+    while(m_lexer.getChar() != '}'){
+        if(m_lexer.getChar() == EOF){
+
+        }
+    }
+}
 
 std::unique_ptr<SyntaxTree> Parser::parseNum(){
     auto result = std::make_unique<NumberAST>(m_genData, m_lexer.getNum());
@@ -103,32 +121,6 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier(){
     // parse ')'
     m_lexer.nextToken();
     return std::make_unique<CallAST>(m_genData, idName, std::move(args));
-}
-
-std::unique_ptr<BlockAST> Parser::parseBlock(){
-    // parse '{'
-    if(m_lexer.getChar() != '{'){
-        llvm::errs() << "Expected '{'.";
-        return nullptr;
-    }
-
-    m_lexer.nextToken();
-
-    std::vector<std::unique_ptr<SyntaxTree>> lines;
-    while(m_lexer.getChar() != '}'){
-        if(m_lexer.getChar() == EOF){
-            llvm::errs() << "Expected '}'.";
-            return nullptr;
-        }
-
-        if(auto lineAST = parseMain()){
-            lines.push_back(std::move(lineAST));
-        } else {
-            return nullptr;
-        }
-    }
-
-    return std::make_unique<BlockAST>(m_genData,std::move(lines));
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseConditional(){
@@ -336,9 +328,16 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition(){
     }
 
     // body
+    if(m_lexer.getChar() != '{'){
+        llvm::errs() << "Expected definition.";
+        return nullptr;
+    }
+
     if(auto block = parseBlock()){
         return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(block));
     }
+
+
     return nullptr;
 }
 
