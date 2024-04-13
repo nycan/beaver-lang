@@ -50,7 +50,7 @@ int main(){
     parse();
 
     llvm::legacy::PassManager pass;
-    auto fileType = llvm::CodeGenFileType::ObjectFile;
+    auto fileType = llvm::CodeGenFileType::ObjectFile;  // Change this to llvm::CodeGenFileType::AssemblyFile to compile into assembly 
 
     if(targetMachine->addPassesToEmitFile(pass, outputStream, nullptr, fileType)){
         llvm::errs() << "Invalid file type";
