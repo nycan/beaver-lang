@@ -7,15 +7,15 @@
 
 // all tokens
 enum class Token{
-    UNKNOWN,
-    ENDFILE,
-    FUNC,
-    EXTERN,
-    IDENTIFIER,
-    NUMBER,
-    IF,
-    ELSE,
-    RETURN
+    unknown,
+    endFile,
+    func,
+    externTok,
+    identifier,
+    number,
+    ifTok,
+    elseTok,
+    returnTok
 };
 
 class Lexer{
@@ -45,7 +45,7 @@ private:
 
 public:
     Lexer(): m_identifier(""), m_numVal(0), 
-             m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' '),
+             m_currTok(Token::unknown), m_currChar(getchar()), m_lastChar(' '),
              m_lineNumber(1), m_charPos(1) {}
     ~Lexer() = default;
 

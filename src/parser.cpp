@@ -117,7 +117,7 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
     // if an else block exists, parse it
     // nullptr is used for a non-existant else block
     std::vector<std::unique_ptr<SyntaxTree>> elseBlock;
-    if(m_lexer.getTok() == Token::ELSE){
+    if(m_lexer.getTok() == Token::elseTok){
         // parse "else"
         m_lexer.nextToken();
 
@@ -147,13 +147,13 @@ std::unique_ptr<SyntaxTree> Parser::handleUnknown(){
 // main parse function
 std::unique_ptr<SyntaxTree> Parser::parseMain(){
     switch(m_lexer.getTok()){
-        case Token::IDENTIFIER:
+        case Token::identifier:
             return parseIdentifier();
-        case Token::NUMBER:
+        case Token::number:
             return parseNum();
-        case Token::IF:
+        case Token::ifTok:
             return parseConditional();
-        case Token::RETURN:
+        case Token::returnTok:
             return parseReturn();
         default:
             return handleUnknown();
@@ -232,7 +232,7 @@ std::unique_ptr<SyntaxTree> Parser::parseExpression(){
 }
 
 std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
-    if(m_lexer.getTok() != Token::IDENTIFIER){
+    if(m_lexer.getTok() != Token::identifier){
         llvm::errs() << "Expected function name in prototype.\n";
         return nullptr;
     }
@@ -251,7 +251,7 @@ std::unique_ptr<PrototypeAST> Parser::parsePrototype(){
     if(m_lexer.getChar() != ')'){
         while(true){
             // parse argument
-            if(m_lexer.getTok() != Token::IDENTIFIER){
+            if(m_lexer.getTok() != Token::identifier){
                 llvm::errs() << "Unexpected token in prototype\n";
                 return nullptr;
             }
@@ -341,9 +341,9 @@ bool Parser::operator()(){
 
     while(true){
         switch(m_lexer.getTok()){
-            case Token::ENDFILE:
+            case Token::endFile:
                 return;
-            case Token::FUNC:
+            case Token::func:
                 if(auto resAST = parseDefinition()){
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed function definition.\n";
@@ -355,7 +355,7 @@ bool Parser::operator()(){
                     m_lexer.nextToken();
                 }
                 break;
-            case Token::EXTERN:
+            case Token::externTok:
                 if(auto resAST = parseExtern()){
                     if(auto* resIR = resAST->codegen()){
                         std::cerr << "Successfully parsed extern.\n";
