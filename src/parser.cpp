@@ -4,7 +4,7 @@
 std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock(){
     // parse '{'
     if(m_lexer.getChar() != '{'){
-        llvm::errs() << "Expected body.";
+        llvm::errs() << "Expected '{'.";
         return std::vector<std::unique_ptr<SyntaxTree>>();
     }
     m_lexer.nextToken();
@@ -13,9 +13,22 @@ std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock(){
     std::vector<std::unique_ptr<SyntaxTree>> result;
     while(m_lexer.getChar() != '}'){
         if(m_lexer.getChar() == EOF){
-
+            llvm::errs() << "Expected '}'.";
+            return std::vector<std::unique_ptr<SyntaxTree>>();
+        }
+        if(auto line = parseMain()){
+            result.push_back(line);
+        } else {
+            return std::vector<std::unique_ptr<SyntaxTree>>();
         }
     }
+
+    //parse '}'
+    m_lexer.nextToken();
+    if(result.size() == 0){
+        llvm::errs() << "Expected at least one line in definition.\n";
+    }
+    return result;
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseNum(){
@@ -96,20 +109,20 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional(){
     }
 
     // parse the "then"
-    auto mainBlock = parseBlock();
-    if(!mainBlock){ 
+    std::vector<std::unique_ptr<SyntaxTree>> mainBlock = parseBlock();
+    if(mainBlock.size() == 0){ 
         return nullptr;
     }
 
     // if an else block exists, parse it
     // nullptr is used for a non-existant else block
-    std::unique_ptr<BlockAST> elseBlock = nullptr;
+    std::vector<std::unique_ptr<SyntaxTree>> elseBlock;
     if(m_lexer.getTok() == Token::ELSE){
         // parse "else"
         m_lexer.nextToken();
 
         elseBlock = parseBlock();
-        if(!elseBlock){
+        if(elseBlock.size() == 0){
             return nullptr;
         }
     }
@@ -295,10 +308,10 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition(){
         return nullptr;
     }
 
-    if(auto block = parseBlock()){
+    std::vector<std::unique_ptr<SyntaxTree>> block = parseBlock();
+    if(block.size() > 0){
         return std::make_unique<FunctionAST>(m_genData, std::move(prototype), std::move(block));
     }
-
 
     return nullptr;
 }
