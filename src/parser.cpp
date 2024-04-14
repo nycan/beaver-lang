@@ -17,7 +17,7 @@ std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock(){
             return std::vector<std::unique_ptr<SyntaxTree>>();
         }
         if(auto line = parseMain()){
-            result.push_back(line);
+            result.push_back(std::move(line));
         } else {
             return std::vector<std::unique_ptr<SyntaxTree>>();
         }
@@ -329,7 +329,9 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel(){
             "somethingThatIllProbablyForgetToChange", // Don't forget to change this
             std::vector<std::string>()
         );
-        return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(expr));
+        std::vector<std::unique_ptr<SyntaxTree>> exprBlock;
+        exprBlock.push_back(std::move(expr));
+        return std::make_unique<FunctionAST>(m_genData, std::move(prototype),std::move(exprBlock));
     }
     return nullptr;
 }
@@ -342,7 +344,7 @@ bool Parser::operator()(){
     while(true){
         switch(m_lexer.getTok()){
             case Token::endFile:
-                return;
+                return false;
             case Token::func:
                 if(auto resAST = parseDefinition()){
                     if(auto* resIR = resAST->codegen()){

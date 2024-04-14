@@ -61,7 +61,7 @@ int main(){
     }
 
     llvm::legacy::PassManager pass;
-    auto fileType = llvm::CodeGenFileType::ObjectFile;
+    auto fileType = llvm::CodeGenFileType::CGFT_ObjectFile;
 
     if(targetMachine->addPassesToEmitFile(pass, outputStream, nullptr, fileType)){
         llvm::errs() << "Invalid file type";

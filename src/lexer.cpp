@@ -28,22 +28,22 @@ Token Lexer::processToken(){
 
         //keywords
         if(m_identifier=="fn"){
-            return Token::FUNC;
+            return Token::func;
         }
         if(m_identifier=="extern"){
-            return Token::EXTERN;
+            return Token::externTok;
         }
         if(m_identifier=="if"){
-            return Token::IF;
+            return Token::ifTok;
         }
         if(m_identifier=="else"){
-            return Token::ELSE;
+            return Token::elseTok;
         }
         if(m_identifier=="ret"){
-            return Token::RETURN;
+            return Token::returnTok;
         }
         // if not a keyword, it's an identifier
-        return Token::IDENTIFIER;
+        return Token::identifier;
     }
 
     // Numbers
@@ -55,7 +55,7 @@ Token Lexer::processToken(){
         } while (std::isdigit(m_currChar) || m_currChar=='.');
 
         m_numVal = std::stoi(numStr);
-        return Token::NUMBER;
+        return Token::number;
     }
 
     // Comments
@@ -70,9 +70,9 @@ Token Lexer::processToken(){
     }
 
     if(m_currChar==EOF){
-        return Token::ENDFILE;
+        return Token::endFile;
     }
 
     nextChar();
-    return Token::UNKNOWN;
+    return Token::unknown;
 }
