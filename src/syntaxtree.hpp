@@ -63,6 +63,7 @@ public:
     SyntaxTree(std::shared_ptr<Generator> t_generator): m_generator(t_generator) {}
     virtual ~SyntaxTree() = default;
     virtual llvm::Value* codegen() = 0;
+    virtual bool terminatesBlock(){ return false; }
 };
 
 class NumberAST : public SyntaxTree{
@@ -162,6 +163,7 @@ public:
     ~ReturnAST() = default;
 
     llvm::Value* codegen() override;
+    virtual bool terminatesBlock() override { return true; }
 };
 
 // function definitions

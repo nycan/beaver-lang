@@ -135,16 +135,25 @@ llvm::Value* ConditionalAST::codegen() {
 
     m_generator->m_builder->SetInsertPoint(mainBB);
 
-    //TODO: make sure there's only one terminator and handle phi nodes
+    //TODO: handle phi nodes
+    bool terminated = false;
     for(auto& line : m_mainBlock){
         llvm::Value* mainCode = line->codegen();
         if(!mainCode){
             return nullptr;
         }
+
+        // if block is returns, then don't worry processing the rest
+        if(line->terminatesBlock()){
+            terminated = true;
+            break;
+        }
     }
 
     // after it's finished, go to the merged block
-    m_generator->m_builder->CreateBr(mergedBB);
+    if(!terminated){
+        m_generator->m_builder->CreateBr(mergedBB);
+    }
     mainBB = m_generator->m_builder->GetInsertBlock();
 
     // create branch and assign to else block
@@ -153,15 +162,23 @@ llvm::Value* ConditionalAST::codegen() {
 
     // generate code for the else block
     // no else block == vec of size 0, so this won't execute
+    terminated = false;
     for(auto& line : m_elseBlock){
         llvm::Value* elseCode = line->codegen();
         if(!elseCode){
             return nullptr;
         }
+
+        if(line->terminatesBlock()){
+            terminated = true;
+            break;
+        }
     }
 
     //go back to merged blcok
-    m_generator->m_builder->CreateBr(mergedBB);
+    if(!terminated){
+        m_generator->m_builder->CreateBr(mergedBB);
+    }
 
     // in case insert point was changed during code generation
     elseBB = m_generator->m_builder->GetInsertBlock();
