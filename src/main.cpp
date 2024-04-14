@@ -6,9 +6,25 @@
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/TargetParser/Host.h"
 
-int main() {
-  // for now, just check the target automatically
+// return the index of an option, if it exists
+size_t findOption(int argc, char **argv, const std::string& option) {
+  auto result = std::find(argv, argv+argc, option);
+  if (result) {
+    return result-argv;
+  }
+  return 0;
+}
+
+int main(int argc, char **argv) {
+  // get the string representing the system to compile to
   std::string targetTriple = llvm::sys::getDefaultTargetTriple();
+  if (size_t argIndex = findOption(argc-2, argv, "-target")) {
+    if (argv[argIndex+1][0] == '-') {
+      llvm::errs() << "Expected target triple.";
+      return 1;
+    }
+    targetTriple = argv[argIndex+1];
+  }
 
   // initialize stuff
   llvm::InitializeAllTargetInfos();
@@ -40,8 +56,17 @@ int main() {
   generator->m_module->setDataLayout(targetMachine->createDataLayout());
   generator->m_module->setTargetTriple(targetTriple);
 
-  // initialize the output stream
-  auto outputFile = "output.o";
+  // get the output file
+  std::string outputFile = "output.o";
+  if (size_t argIndex = findOption(argc-2, argv, "-o")) {
+    if (argv[argIndex+1][0] == '-') {
+      llvm::errs() << "Expected output filename.";
+      return 1;
+    }
+    outputFile = argv[argIndex+1];
+  }
+
+  // initialize the ouput stream
   std::error_code errorCode;
   llvm::raw_fd_ostream outputStream(outputFile, errorCode,
                                     llvm::sys::fs::OF_None);
@@ -52,7 +77,7 @@ int main() {
   }
 
   // create the lexer and parser
-  FileLexer lex("test.txt");
+  FileLexer lex(argv[argc-1]);
   Parser parse(lex, generator);
 
   // parse and generate code
@@ -61,10 +86,15 @@ int main() {
   }
 
   llvm::legacy::PassManager pass;
-  auto fileType = llvm::CodeGenFileType::CGFT_ObjectFile;
+  llvm::CodeGenFileType outputType;
+  if (findOption(argc, argv, "-S")) {
+    outputType = llvm::CodeGenFileType::CGFT_AssemblyFile;
+  } else {
+    outputType = llvm::CodeGenFileType::CGFT_ObjectFile;
+  }
 
   if (targetMachine->addPassesToEmitFile(pass, outputStream, nullptr,
-                                         fileType)) {
+                                         outputType)) {
     llvm::errs() << "Invalid file type";
     return 1;
   }
