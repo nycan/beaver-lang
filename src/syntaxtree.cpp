@@ -68,7 +68,7 @@ llvm::Value *BinaryOpAST::codegen() {
         llvm::Type::getDoubleTy(*m_generator->m_context));
   case '>':
     return m_generator->m_builder->CreateUIToFP(
-        m_generator->m_builder->CreateFCmpULT(leftCode, rightCode),
+        m_generator->m_builder->CreateFCmpUGT(leftCode, rightCode),
         llvm::Type::getDoubleTy(*m_generator->m_context));
   default:
     std::cerr << "Unknown operator\n";
