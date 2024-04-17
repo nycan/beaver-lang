@@ -29,5 +29,5 @@ llvm_map_components_to_libnames(
   native
 )
 
-add_executable(testlang src/main.cpp src/lexer.cpp src/parser.cpp src/syntaxtree.cpp)
+add_executable(testlang src/main.cpp src/lexer.cpp src/parser.cpp src/syntaxtree.cpp src/operations.cpp)
 target_link_libraries(testlang ${llvm_libs} ${targets})
