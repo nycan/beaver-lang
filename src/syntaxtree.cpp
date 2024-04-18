@@ -53,27 +53,7 @@ llvm::Value *BinaryOpAST::codegen() {
   if (!leftCode || !rightCode) {
     return nullptr;
   }
-  switch (m_op) { // this will probably be replaced at some point...
-  case '+':
-    return m_generator->m_builder->CreateFAdd(leftCode, rightCode);
-  case '-':
-    return m_generator->m_builder->CreateFSub(leftCode, rightCode);
-  case '*':
-    return m_generator->m_builder->CreateFMul(leftCode, rightCode);
-  case '/':
-    return m_generator->m_builder->CreateFDiv(leftCode, rightCode);
-  case '<':
-    return m_generator->m_builder->CreateUIToFP(
-        m_generator->m_builder->CreateFCmpULT(leftCode, rightCode),
-        llvm::Type::getDoubleTy(*m_generator->m_context));
-  case '>':
-    return m_generator->m_builder->CreateUIToFP(
-        m_generator->m_builder->CreateFCmpUGT(leftCode, rightCode),
-        llvm::Type::getDoubleTy(*m_generator->m_context));
-  default:
-    std::cerr << "Unknown operator\n";
-    return nullptr;
-  }
+  return m_op.codegen(m_generator->m_builder,leftCode,rightCode);
 };
 
 llvm::Value *CallAST::codegen() {

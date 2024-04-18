@@ -21,6 +21,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/Reassociate.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#include "operations.hpp"
 #include <iostream>
 #include <map>
 #include <memory>
@@ -88,11 +89,11 @@ public:
 // binary operations
 class BinaryOpAST : public SyntaxTree {
 private:
-  char m_op;
+  const Operation m_op;
   std::unique_ptr<SyntaxTree> m_lhs, m_rhs;
 
 public:
-  BinaryOpAST(std::shared_ptr<Generator> t_generator, const char t_op,
+  BinaryOpAST(std::shared_ptr<Generator> t_generator, const Operation t_op,
               std::unique_ptr<SyntaxTree> t_lhs,
               std::unique_ptr<SyntaxTree> t_rhs)
       : SyntaxTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),

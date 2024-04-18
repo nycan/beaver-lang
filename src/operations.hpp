@@ -3,6 +3,7 @@
 
 #include "llvm/IR/IRBuilder.h"
 #include <string>
+#include <map>
 
 // defines an arbitrary operation
 // everything is public since they will all be constant
@@ -55,7 +56,7 @@ namespace operations{
         } 
     };
 
-    std::map<std::string,Operation> opKeys = {
+    const std::map<std::string,Operation> opKeys = {
         {"+",ADD},
         {"-",SUB},
         {"*",MULT},
@@ -65,8 +66,7 @@ namespace operations{
     };
 }
 
-Operation getOpFromKey(std::string t_key) {
-    
-}
+// find operation given text
+Operation getOpFromKey(std::string t_key);
 
 #endif // TESTLANG_OPERATIONS_HPP
