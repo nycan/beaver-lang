@@ -161,41 +161,19 @@ std::unique_ptr<SyntaxTree> Parser::parseMain() {
   }
 }
 
-// assigns precedence to operations
-int Parser::BinopPrecedence() { // TODO: replace this with something better
-  switch (m_lexer.getChar()) {
-  case '*':
-    return 3;
-  case '/':
-    return 3;
-  case '+':
-    return 2;
-  case '-':
-    return 2;
-  case '<':
-    return 1;
-  case '>':
-    return 1;
-  default:
-    return -1;
-  }
-}
-
 std::unique_ptr<SyntaxTree>
 Parser::parseOpRHS(const int t_minPrec,
                    std::unique_ptr<SyntaxTree> t_leftSide) {
   while (true) {
-    int precedence = BinopPrecedence();
+    // parse operation
+    Operation op = getOpFromKey(m_lexer.getOperation());
+    m_lexer.nextToken();
 
     // if it is lower precedence, then it will be parsed in a different call
     // since unknown operators return -1, this handles the no-operation case
-    if (precedence < t_minPrec) {
+    if (op.precedence < t_minPrec) {
       return t_leftSide;
     }
-
-    // parse operation
-    char operation = m_lexer.getChar();
-    m_lexer.nextToken();
 
     // parse right side
     auto rightSide = parseMain();
@@ -204,18 +182,18 @@ Parser::parseOpRHS(const int t_minPrec,
     }
 
     // if the expression continues, parse it
-    int nextPrec = BinopPrecedence();
+    Operation nextOp = getOpFromKey(m_lexer.getOperation());
     // if the next operator is higher precedence, it needs to be handled before
     // this one parse recursively
-    if (precedence < nextPrec) {
-      rightSide = parseOpRHS(precedence + 1, std::move(rightSide));
+    if (op.precedence < nextOp.precedence) {
+      rightSide = parseOpRHS(op.precedence + 1, std::move(rightSide));
       if (!rightSide) {
         return nullptr;
       }
     }
 
     t_leftSide = std::make_unique<BinaryOpAST>(
-        m_genData, operation, std::move(t_leftSide), std::move(rightSide));
+        m_genData, op, std::move(t_leftSide), std::move(rightSide));
   }
 }
 

@@ -73,6 +73,11 @@ Token Lexer::processToken() {
     return Token::endFile;
   }
 
+  m_operation = m_currChar;
   nextChar();
+  while (!std::isspace(m_currChar) && !std::isalnum(m_currChar)) {
+    m_operation += m_currChar;
+    nextChar();
+  };
   return Token::unknown;
 }

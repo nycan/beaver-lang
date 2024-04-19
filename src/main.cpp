@@ -16,6 +16,7 @@ size_t findOption(int argc, char **argv, const std::string& option) {
 }
 
 int main(int argc, char **argv) {
+  std::cout << "Initializing target\n";
   // get the string representing the system to compile to
   std::string targetTriple = llvm::sys::getDefaultTargetTriple();
   if (size_t argIndex = findOption(argc-2, argv, "-target")) {
@@ -51,11 +52,13 @@ int main(int argc, char **argv) {
   auto targetMachine = target->createTargetMachine(targetTriple, CPU, features,
                                                    options, llvm::Reloc::PIC_);
 
+  std::cout << "Initializing generator\n";
   // initialize the generator
   auto generator = std::make_shared<Generator>();
-  generator->m_module->setDataLayout(targetMachine->createDataLayout());
-  generator->m_module->setTargetTriple(targetTriple);
+  generator->m_module.setDataLayout(targetMachine->createDataLayout());
+  generator->m_module.setTargetTriple(targetTriple);
 
+  std::cout << "Initializing output file\n";
   // get the output file
   std::string outputFile = "output.o";
   if (size_t argIndex = findOption(argc-2, argv, "-o")) {
@@ -76,15 +79,19 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  std::cout << "Initializing lexer with file " << argv[argc-1] << '\n';
   // create the lexer and parser
   FileLexer lex(argv[argc-1]);
+  std::cout << "Initializing parser\n";
   Parser parse(lex, generator);
 
+  std::cout << "Parsing and generating code\n";
   // parse and generate code
   if (parse()) {
     return 1;
   }
 
+  std::cout << "Initializing pass manager\n";
   llvm::legacy::PassManager pass;
   llvm::CodeGenFileType outputType;
   if (findOption(argc, argv, "-S")) {
@@ -99,6 +106,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  pass.run(*generator->m_module);
+  std::cout << "Running pass manager\n";
+  pass.run(generator->m_module);
   outputStream.flush();
 }

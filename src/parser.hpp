@@ -19,7 +19,6 @@ private:
   std::unique_ptr<SyntaxTree> parseConditional();
   std::unique_ptr<SyntaxTree> handleUnknown();
   std::unique_ptr<SyntaxTree> parseMain();
-  int BinopPrecedence();
   std::unique_ptr<SyntaxTree>
   parseOpRHS(const int t_minPrec, std::unique_ptr<SyntaxTree> t_leftSide);
   std::unique_ptr<PrototypeAST> parsePrototype();
