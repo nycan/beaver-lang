@@ -7,51 +7,15 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/Scalar/Reassociate.h"
-#include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #include "operations.hpp"
+#include "generator.hpp"
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-
-// class to store all the things needed for code generation & optimization
-class Generator {
-public:
-  // stuff for generation
-  std::unique_ptr<llvm::LLVMContext> m_context;
-  std::unique_ptr<llvm::IRBuilder<>> m_builder;
-  std::unique_ptr<llvm::Module> m_module;
-  std::map<std::string, llvm::Value *> m_namedValues;
-
-  // stuff for optimization
-  std::unique_ptr<llvm::FunctionPassManager> m_funcPass;
-  std::unique_ptr<llvm::LoopAnalysisManager> m_loopAnalyzer;
-  std::unique_ptr<llvm::FunctionAnalysisManager> m_funcAnalyzer;
-  std::unique_ptr<llvm::CGSCCAnalysisManager> m_callAnalyzer;
-  std::unique_ptr<llvm::ModuleAnalysisManager> m_moduleAnalyzer;
-  std::unique_ptr<llvm::PassInstrumentationCallbacks> m_callbacks;
-  std::unique_ptr<llvm::StandardInstrumentations> m_instrumentations;
-
-  llvm::ModulePassManager m_optimizer;
-
-  inline void print() { m_module->print(llvm::errs(), nullptr); }
-
-  Generator();
-};
 
 // base AST class
 class SyntaxTree {
