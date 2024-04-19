@@ -8,7 +8,7 @@
 
 class Parser {
 private:
-  Lexer m_lexer;
+  std::unique_ptr<Lexer> m_lexer;
   std::shared_ptr<Generator> m_genData;
 
   std::vector<std::unique_ptr<SyntaxTree>> parseBlock();
@@ -28,8 +28,8 @@ private:
   std::unique_ptr<FunctionAST> parseTopLevel();
 
 public:
-  Parser(Lexer &t_lexer, std::shared_ptr<Generator> t_genData)
-      : m_lexer(t_lexer), m_genData(t_genData) {}
+  Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)
+      : m_lexer(std::move(t_lexer)), m_genData(t_genData) {}
   ~Parser() = default;
 
   bool operator()();

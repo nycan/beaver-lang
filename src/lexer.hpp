@@ -26,7 +26,7 @@ protected:
   unsigned m_charPos;
 
   // way to get the next character depends on input method
-  virtual char processChar() { return getchar(); };
+  virtual char processChar() = 0;
 
 private:
   // stored processed values
@@ -48,7 +48,7 @@ private:
 public:
   Lexer()
       : m_identifier(""), m_numVal(0), m_operation(""), m_currTok(Token::unknown),
-        m_currChar(getchar()), m_lastChar(' '), m_lineNumber(1), m_charPos(1) {std::cout << "test\n";}
+        m_currChar(' '), m_lastChar(' '), m_lineNumber(1), m_charPos(1) {}
   ~Lexer() = default;
 
   inline std::string getIdentifier() const { return m_identifier; }

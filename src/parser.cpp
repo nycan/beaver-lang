@@ -3,16 +3,16 @@
 // helper function for blocks
 std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock() {
   // parse '{'
-  if (m_lexer.getChar() != '{') {
+  if (m_lexer->getChar() != '{') {
     llvm::errs() << "Expected '{'.";
     return std::vector<std::unique_ptr<SyntaxTree>>();
   }
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   // parse body
   std::vector<std::unique_ptr<SyntaxTree>> result;
-  while (m_lexer.getChar() != '}') {
-    if (m_lexer.getChar() == EOF) {
+  while (m_lexer->getChar() != '}') {
+    if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
       return std::vector<std::unique_ptr<SyntaxTree>>();
     }
@@ -24,7 +24,7 @@ std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock() {
   }
 
   // parse '}'
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   if (result.size() == 0) {
     llvm::errs() << "Expected at least one line in definition.\n";
   }
@@ -32,14 +32,14 @@ std::vector<std::unique_ptr<SyntaxTree>> Parser::parseBlock() {
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseNum() {
-  auto result = std::make_unique<NumberAST>(m_genData, m_lexer.getNum());
-  m_lexer.nextToken();
+  auto result = std::make_unique<NumberAST>(m_genData, m_lexer->getNum());
+  m_lexer->nextToken();
   return std::move(result);
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseParens() {
   // parse '('
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   // parse inside expression
   auto exprResult = parseExpression();
@@ -48,29 +48,29 @@ std::unique_ptr<SyntaxTree> Parser::parseParens() {
   }
 
   // parse ')'
-  if (m_lexer.getChar() != ')') {
+  if (m_lexer->getChar() != ')') {
     llvm::errs() << "Missing ')'\n";
     return nullptr;
   }
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   return exprResult;
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseIdentifier() {
   // parse identifier
-  std::string idName = m_lexer.getIdentifier();
-  m_lexer.nextToken();
+  std::string idName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
 
   // variable
-  if (m_lexer.getChar() != '(') {
+  if (m_lexer->getChar() != '(') {
     return std::make_unique<VariableAST>(m_genData, idName);
   }
 
   // function call
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   std::vector<std::unique_ptr<SyntaxTree>> args;
-  if (m_lexer.getChar() != ')') {
+  if (m_lexer->getChar() != ')') {
     while (true) {
       // parse argument
       if (auto argument = parseExpression()) {
@@ -80,27 +80,27 @@ std::unique_ptr<SyntaxTree> Parser::parseIdentifier() {
       }
 
       // end of argument list
-      if (m_lexer.getChar() == ')') {
+      if (m_lexer->getChar() == ')') {
         break;
       }
 
       // separator
-      if (m_lexer.getChar() != ',') {
+      if (m_lexer->getChar() != ',') {
         llvm::errs() << "Expected ')' or ',' in argument list.";
         return nullptr;
       }
-      m_lexer.nextToken();
+      m_lexer->nextToken();
     }
   }
 
   // parse ')'
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseConditional() {
   // parse 'if'
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   // parse condition
   auto condition = parseExpression();
@@ -117,9 +117,9 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional() {
   // if an else block exists, parse it
   // nullptr is used for a non-existant else block
   std::vector<std::unique_ptr<SyntaxTree>> elseBlock;
-  if (m_lexer.getTok() == Token::elseTok) {
+  if (m_lexer->getTok() == Token::elseTok) {
     // parse "else"
-    m_lexer.nextToken();
+    m_lexer->nextToken();
 
     elseBlock = parseBlock();
     if (elseBlock.size() == 0) {
@@ -135,11 +135,11 @@ std::unique_ptr<SyntaxTree> Parser::parseConditional() {
 // helper function for parseMain to parse the last character when the token is
 // unknown
 std::unique_ptr<SyntaxTree> Parser::handleUnknown() {
-  switch (m_lexer.getChar()) {
+  switch (m_lexer->getChar()) {
   case '(':
     return parseParens();
   default:
-    std::cerr << m_lexer.getChar() << '\n';
+    std::cerr << m_lexer->getChar() << '\n';
     llvm::errs() << "Unknown token\n";
     return nullptr;
   }
@@ -147,7 +147,7 @@ std::unique_ptr<SyntaxTree> Parser::handleUnknown() {
 
 // main parse function
 std::unique_ptr<SyntaxTree> Parser::parseMain() {
-  switch (m_lexer.getTok()) {
+  switch (m_lexer->getTok()) {
   case Token::identifier:
     return parseIdentifier();
   case Token::number:
@@ -166,8 +166,13 @@ Parser::parseOpRHS(const int t_minPrec,
                    std::unique_ptr<SyntaxTree> t_leftSide) {
   while (true) {
     // parse operation
-    Operation op = getOpFromKey(m_lexer.getOperation());
-    m_lexer.nextToken();
+    Operation op = getOpFromKey(m_lexer->getOperation());
+    if(!op.codegen) {
+      llvm::errs() << "Unknown operator.";
+      return nullptr;
+    }
+    std::cout << op.precedence << '\n';
+    m_lexer->nextToken();
 
     // if it is lower precedence, then it will be parsed in a different call
     // since unknown operators return -1, this handles the no-operation case
@@ -182,7 +187,7 @@ Parser::parseOpRHS(const int t_minPrec,
     }
 
     // if the expression continues, parse it
-    Operation nextOp = getOpFromKey(m_lexer.getOperation());
+    Operation nextOp = getOpFromKey(m_lexer->getOperation());
     // if the next operator is higher precedence, it needs to be handled before
     // this one parse recursively
     if (op.precedence < nextOp.precedence) {
@@ -206,59 +211,59 @@ std::unique_ptr<SyntaxTree> Parser::parseExpression() {
 }
 
 std::unique_ptr<PrototypeAST> Parser::parsePrototype() {
-  if (m_lexer.getTok() != Token::identifier) {
+  if (m_lexer->getTok() != Token::identifier) {
     llvm::errs() << "Expected function name in prototype.\n";
     return nullptr;
   }
 
   // function name
-  std::string funcName = m_lexer.getIdentifier();
-  m_lexer.nextToken();
+  std::string funcName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
 
   // arguments
-  if (m_lexer.getChar() != '(') {
+  if (m_lexer->getChar() != '(') {
     llvm::errs() << "Expected '('\n";
     return nullptr;
   }
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   std::vector<std::string> args;
-  if (m_lexer.getChar() != ')') {
+  if (m_lexer->getChar() != ')') {
     while (true) {
       // parse argument
-      if (m_lexer.getTok() != Token::identifier) {
+      if (m_lexer->getTok() != Token::identifier) {
         llvm::errs() << "Unexpected token in prototype\n";
         return nullptr;
       }
-      args.push_back(m_lexer.getIdentifier());
-      m_lexer.nextToken();
+      args.push_back(m_lexer->getIdentifier());
+      m_lexer->nextToken();
 
       // end of argument list
-      if (m_lexer.getChar() == ')') {
+      if (m_lexer->getChar() == ')') {
         break;
       }
 
       // separator
-      if (m_lexer.getChar() != ',') {
+      if (m_lexer->getChar() != ',') {
         llvm::errs() << "Expected ')' or ',' in argument list.";
         return nullptr;
       }
-      m_lexer.nextToken();
+      m_lexer->nextToken();
     }
   }
 
   // parse ')'
-  if (m_lexer.getChar() != ')') {
+  if (m_lexer->getChar() != ')') {
     llvm::errs() << "Expected ')'\n";
     return nullptr;
   }
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   return std::make_unique<PrototypeAST>(m_genData, funcName, std::move(args));
 }
 
 std::unique_ptr<SyntaxTree> Parser::parseReturn() {
   // parse "ret"
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   if (auto resAST = parseMain()) {
     return std::make_unique<ReturnAST>(m_genData, std::move(resAST));
@@ -268,7 +273,7 @@ std::unique_ptr<SyntaxTree> Parser::parseReturn() {
 
 std::unique_ptr<FunctionAST> Parser::parseDefinition() {
   // function declaration
-  m_lexer.nextToken();
+  m_lexer->nextToken();
 
   // prototype
   auto prototype = parsePrototype();
@@ -277,11 +282,6 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition() {
   }
 
   // body
-  if (m_lexer.getChar() != '{') {
-    llvm::errs() << "Expected definition.";
-    return nullptr;
-  }
-
   std::vector<std::unique_ptr<SyntaxTree>> block = parseBlock();
   if (block.size() > 0) {
     return std::make_unique<FunctionAST>(m_genData, std::move(prototype),
@@ -292,7 +292,7 @@ std::unique_ptr<FunctionAST> Parser::parseDefinition() {
 }
 
 std::unique_ptr<PrototypeAST> Parser::parseExtern() {
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   return parsePrototype();
 }
 
@@ -313,11 +313,11 @@ std::unique_ptr<FunctionAST> Parser::parseTopLevel() {
 
 // temporary main function
 bool Parser::operator()() {
-  m_lexer.nextToken();
+  m_lexer->nextToken();
   bool hasErrors = false;
 
   while (true) {
-    switch (m_lexer.getTok()) {
+    switch (m_lexer->getTok()) {
     case Token::endFile:
       return false;
     case Token::func:
@@ -329,7 +329,7 @@ bool Parser::operator()() {
         }
       } else {
         hasErrors = true;
-        m_lexer.nextToken();
+        m_lexer->nextToken();
       }
       break;
     case Token::externTok:
@@ -341,12 +341,12 @@ bool Parser::operator()() {
         }
       } else {
         hasErrors = true;
-        m_lexer.nextToken();
+        m_lexer->nextToken();
       }
       break;
     default:
-      if (m_lexer.getChar() == ';') {
-        m_lexer.nextToken();
+      if (m_lexer->getChar() == ';') {
+        m_lexer->nextToken();
       } else {
         if (auto resAST = parseTopLevel()) {
           if (auto *resIR = resAST->codegen()) {
@@ -357,7 +357,7 @@ bool Parser::operator()() {
           }
         } else {
           hasErrors = true;
-          m_lexer.nextToken();
+          m_lexer->nextToken();
         }
       }
       break;

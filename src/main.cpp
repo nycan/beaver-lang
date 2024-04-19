@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 
   std::cout << "Initializing lexer with file " << argv[argc-1] << '\n';
   // create the lexer and parser
-  FileLexer lex(argv[argc-1]);
+  std::unique_ptr<Lexer> lex = std::make_unique<FileLexer>(argv[argc-1]);
   std::cout << "Initializing parser\n";
-  Parser parse(lex, generator);
+  Parser parse(std::move(lex), generator);
 
   std::cout << "Parsing and generating code\n";
   // parse and generate code
@@ -95,9 +95,9 @@ int main(int argc, char **argv) {
   llvm::legacy::PassManager pass;
   llvm::CodeGenFileType outputType;
   if (findOption(argc, argv, "-S")) {
-    outputType = llvm::CodeGenFileType::CGFT_AssemblyFile;
+    outputType = llvm::CodeGenFileType::AssemblyFile;
   } else {
-    outputType = llvm::CodeGenFileType::CGFT_ObjectFile;
+    outputType = llvm::CodeGenFileType::ObjectFile;
   }
 
   if (targetMachine->addPassesToEmitFile(pass, outputStream, nullptr,
