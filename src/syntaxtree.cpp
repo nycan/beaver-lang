@@ -105,7 +105,6 @@ llvm::Value *ConditionalAST::codegen() {
   m_generator->m_builder.SetInsertPoint(elseBB);
 
   // generate code for the else block
-  // no else block == vec of size 0, so this won't execute
   terminated = false;
   for (auto &line : m_elseBlock) {
     llvm::Value *elseCode = line->codegen();

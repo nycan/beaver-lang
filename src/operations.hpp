@@ -5,6 +5,7 @@
 #include "generator.hpp"
 #include <string>
 #include <map>
+#include <optional>
 
 // defines an arbitrary operation
 // everything is public since they will all be constant
@@ -68,6 +69,6 @@ namespace operations{
 }
 
 // find operation given text
-Operation getOpFromKey(std::string t_key);
+std::optional<Operation> getOpFromKey(std::string t_key);
 
 #endif // TESTLANG_OPERATIONS_HPP

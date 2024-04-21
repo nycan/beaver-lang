@@ -11,21 +11,21 @@ private:
   std::unique_ptr<Lexer> m_lexer;
   std::shared_ptr<Generator> m_genData;
 
-  std::vector<std::unique_ptr<SyntaxTree>> parseBlock();
-  std::unique_ptr<SyntaxTree> parseNum();
-  std::unique_ptr<SyntaxTree> parseExpression();
-  std::unique_ptr<SyntaxTree> parseParens();
-  std::unique_ptr<SyntaxTree> parseIdentifier();
-  std::unique_ptr<SyntaxTree> parseConditional();
-  std::unique_ptr<SyntaxTree> handleUnknown();
-  std::unique_ptr<SyntaxTree> parseMain();
-  std::unique_ptr<SyntaxTree>
+  std::optional<std::vector<std::unique_ptr<SyntaxTree>>> parseBlock();
+  std::optional<std::unique_ptr<SyntaxTree>> parseNum();
+  std::optional<std::unique_ptr<SyntaxTree>> parseExpression();
+  std::optional<std::unique_ptr<SyntaxTree>> parseParens();
+  std::optional<std::unique_ptr<SyntaxTree>> parseIdentifier();
+  std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
+  std::optional<std::unique_ptr<SyntaxTree>> handleUnknown();
+  std::optional<std::unique_ptr<SyntaxTree>> parseMain();
+  std::optional<std::unique_ptr<SyntaxTree>>
   parseOpRHS(const int t_minPrec, std::unique_ptr<SyntaxTree> t_leftSide);
-  std::unique_ptr<PrototypeAST> parsePrototype();
-  std::unique_ptr<SyntaxTree> parseReturn();
-  std::unique_ptr<FunctionAST> parseDefinition();
-  std::unique_ptr<PrototypeAST> parseExtern();
-  std::unique_ptr<FunctionAST> parseTopLevel();
+  std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
+  std::optional<std::unique_ptr<SyntaxTree>> parseReturn();
+  std::optional<std::unique_ptr<FunctionAST>> parseDefinition();
+  std::optional<std::unique_ptr<PrototypeAST>> parseExtern();
+  std::optional<std::unique_ptr<FunctionAST>> parseTopLevel();
 
 public:
   Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)

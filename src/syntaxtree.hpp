@@ -83,7 +83,8 @@ public:
 class ConditionalAST : public SyntaxTree {
 private:
   std::unique_ptr<SyntaxTree> m_condition;
-  std::vector<std::unique_ptr<SyntaxTree>> m_mainBlock, m_elseBlock;
+  std::vector<std::unique_ptr<SyntaxTree>> m_mainBlock;
+  std::optional<std::vector<std::unique_ptr<SyntaxTree>>> m_elseBlock;
 
 public:
   ConditionalAST(std::shared_ptr<Generator> t_generator,
