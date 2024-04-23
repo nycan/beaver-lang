@@ -21,13 +21,11 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
     } else {
       return {};
     }
+    m_lexer->nextToken();
   }
 
   // parse '}'
   m_lexer->nextToken();
-  if (result.size() == 0) {
-    llvm::errs() << "Expected at least one line in definition.\n";
-  }
   return result;
 }
 
@@ -67,27 +65,27 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
   // function call
   m_lexer->nextToken();
   std::vector<std::unique_ptr<SyntaxTree>> args;
-  if (m_lexer->getChar() != ')') {
-    while (true) {
-      // parse argument
-      if (auto argument = parseExpression()) {
-        args.push_back(std::move(*argument));
-      } else {
-        return {};
-      }
-
-      // end of argument list
-      if (m_lexer->getChar() == ')') {
-        break;
-      }
-
-      // separator
-      if (m_lexer->getChar() != ',') {
-        llvm::errs() << "Expected ')' or ',' in argument list.\n";
-        return {};
-      }
-      m_lexer->nextToken();
+  while (m_lexer->getChar() != ')') {
+    // parse argument
+    if (auto argument = parseExpression()) {
+      args.push_back(std::move(*argument));
+    } else {
+      return {};
     }
+
+    // end of arg list
+    m_lexer->nextToken();
+    if (m_lexer->getChar() == ')') {
+      break;
+    }
+
+    // separator
+    if (m_lexer->getChar() != ',') {
+      std::cout << m_lexer->getChar() << '\n';
+      llvm::errs() << "Expected ')' or ',' in argument list.\n";
+      return {};
+    }
+    m_lexer->nextToken();
   }
 
   // parse ')'
@@ -170,7 +168,6 @@ Parser::parseOpRHS(const int t_minPrec,
     if(!op.has_value()) {
       return t_leftSide;
     }
-    std::cout << op->precedence << '\n';
     m_lexer->nextToken();
 
     // if it is lower precedence, then it will be parsed in a different call
@@ -228,29 +225,26 @@ std::optional<std::unique_ptr<PrototypeAST>> Parser::parsePrototype() {
   }
   m_lexer->nextToken();
   std::vector<std::string> args;
-  if (m_lexer->getChar() != ')') {
-    while (true) {
-      // parse argument
-      if (m_lexer->getTok() != Token::identifier) {
-        llvm::errs() << "Unexpected token in prototype\n";
-        return {};
-      }
-      args.push_back(m_lexer->getIdentifier());
-      m_lexer->nextToken();
-
-      // end of argument list
-      if (m_lexer->getChar() == ')') {
-        break;
-      }
-
-      // separator
-      if (m_lexer->getChar() != ',') {
-        llvm::errs() << "Expected ')' or ',' in argument list.";
-        std::cout << m_lexer->getLine() << ':' << m_lexer->getPos() << '\n';
-        return {};
-      }
-      m_lexer->nextToken();
+  while (m_lexer->getChar() != ')') {
+    // parse argument
+    if (m_lexer->getTok() != Token::identifier) {
+      llvm::errs() << "Unexpected token in prototype\n";
+      return {};
     }
+    args.push_back(m_lexer->getIdentifier());
+
+    // end of arg list
+    m_lexer->nextToken();
+    if (m_lexer->getChar() == ')') {
+      break;
+    }
+
+    // separator
+    if (m_lexer->getChar() != ',') {
+      llvm::errs() << "Expected ')' or ',' in parameter list.\n";
+      return {};
+    }
+    m_lexer->nextToken();
   }
 
   // parse ')'

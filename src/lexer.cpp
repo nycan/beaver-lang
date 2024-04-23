@@ -19,8 +19,8 @@ bool isOperation(char t_character) {
   if (std::isspace(t_character)) {
     return false;
   }
-  static const char invalid[7] = {'(',')','{','}','[',']',';'};
-  for (int idx = 0; idx<7; ++idx) {
+  static const char invalid[8] = {'(',')','{','}','[',']',';',','};
+  for (int idx = 0; idx<8; ++idx) {
     if (t_character == invalid[idx]) {
       return false;
     }
