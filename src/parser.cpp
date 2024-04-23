@@ -124,7 +124,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
     }
   }
 
-  return std::make_unique<ConditionalAST>(m_genData, std::move(condition),
+  return std::make_unique<ConditionalAST>(m_genData, std::move(*condition),
                                           std::move(*mainBlock),
                                           std::move(elseBlock));
 }
@@ -199,7 +199,7 @@ Parser::parseOpRHS(const int t_minPrec,
     }
 
     t_leftSide = std::make_unique<BinaryOpAST>(
-        m_genData, *op, std::move(t_leftSide), std::move(rightSide));
+        m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
   }
 }
 

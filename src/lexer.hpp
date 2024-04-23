@@ -49,7 +49,7 @@ public:
   Lexer()
       : m_identifier(""), m_numVal(0), m_operation(""), m_currTok(Token::unknown),
         m_currChar(' '), m_lastChar(' '), m_lineNumber(1), m_charPos(1) {}
-  ~Lexer() = default;
+  virtual ~Lexer() = default;
 
   inline std::string getIdentifier() const { return m_identifier; }
   inline double getNum() const { return m_numVal; }

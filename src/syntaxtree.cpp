@@ -106,15 +106,17 @@ llvm::Value *ConditionalAST::codegen() {
 
   // generate code for the else block
   terminated = false;
-  for (auto &line : m_elseBlock) {
-    llvm::Value *elseCode = line->codegen();
-    if (!elseCode) {
-      return nullptr;
-    }
+  if(m_elseBlock){
+    for (auto &line : *m_elseBlock) {
+      llvm::Value *elseCode = line->codegen();
+      if (!elseCode) {
+        return nullptr;
+      }
 
-    if (line->terminatesBlock()) {
-      terminated = true;
-      break;
+      if (line->terminatesBlock()) {
+        terminated = true;
+        break;
+      }
     }
   }
 

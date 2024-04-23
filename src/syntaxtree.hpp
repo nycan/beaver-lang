@@ -90,7 +90,7 @@ public:
   ConditionalAST(std::shared_ptr<Generator> t_generator,
                  std::unique_ptr<SyntaxTree> t_condition,
                  std::vector<std::unique_ptr<SyntaxTree>> t_mainBlock,
-                 std::vector<std::unique_ptr<SyntaxTree>> t_elseBlock)
+                 std::optional<std::vector<std::unique_ptr<SyntaxTree>>> t_elseBlock)
       : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
         m_mainBlock(std::move(t_mainBlock)),
         m_elseBlock(std::move(t_elseBlock)) {}
