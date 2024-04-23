@@ -83,7 +83,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 
       // separator
       if (m_lexer->getChar() != ',') {
-        llvm::errs() << "Expected ')' or ',' in argument list.";
+        llvm::errs() << "Expected ')' or ',' in argument list.\n";
         return {};
       }
       m_lexer->nextToken();
@@ -135,6 +135,9 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
   switch (m_lexer->getChar()) {
   case '(':
     return parseParens();
+  case ';':
+    m_lexer->nextToken();
+    return parseMain();
   default:
     std::cerr << m_lexer->getChar() << '\n';
     llvm::errs() << "Unknown token\n";
@@ -165,14 +168,12 @@ Parser::parseOpRHS(const int t_minPrec,
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
     if(!op.has_value()) {
-      llvm::errs() << "Unknown operator.";
-      return {};
+      return t_leftSide;
     }
     std::cout << op->precedence << '\n';
     m_lexer->nextToken();
 
     // if it is lower precedence, then it will be parsed in a different call
-    // since unknown operators return -1, this handles the no-operation case
     if (op->precedence < t_minPrec) {
       return t_leftSide;
     }
@@ -186,8 +187,7 @@ Parser::parseOpRHS(const int t_minPrec,
     // if the expression continues, parse it
     auto nextOp = getOpFromKey(m_lexer->getOperation());
     if(!nextOp.has_value()){
-      llvm::errs() << "Unknown operator.";
-      return {};
+      return t_leftSide;
     }
     // if the next operator is higher precedence, it needs to be handled before
     // this one parse recursively
@@ -246,6 +246,7 @@ std::optional<std::unique_ptr<PrototypeAST>> Parser::parsePrototype() {
       // separator
       if (m_lexer->getChar() != ',') {
         llvm::errs() << "Expected ')' or ',' in argument list.";
+        std::cout << m_lexer->getLine() << ':' << m_lexer->getPos() << '\n';
         return {};
       }
       m_lexer->nextToken();

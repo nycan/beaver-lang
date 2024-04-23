@@ -12,6 +12,22 @@ char Lexer::nextChar() {
   return m_currChar;
 }
 
+bool isOperation(char t_character) {
+  if (std::isalnum(t_character)) {
+    return false;
+  }
+  if (std::isspace(t_character)) {
+    return false;
+  }
+  static const char invalid[7] = {'(',')','{','}','[',']',';'};
+  for (int idx = 0; idx<7; ++idx) {
+    if (t_character == invalid[idx]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 Token Lexer::processToken() {
   // ignore whitespace
   while (std::isspace(m_currChar)) {
@@ -74,10 +90,8 @@ Token Lexer::processToken() {
   }
 
   m_operation = m_currChar;
-  nextChar();
-  while (!std::isspace(m_currChar) && !std::isalnum(m_currChar)) {
+  while (isOperation(nextChar())) {
     m_operation += m_currChar;
-    nextChar();
   };
   return Token::unknown;
 }
