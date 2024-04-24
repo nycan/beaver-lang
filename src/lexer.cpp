@@ -89,9 +89,13 @@ Token Lexer::processToken() {
     return Token::endFile;
   }
 
+  if(!isOperation(m_currChar)) {
+    nextChar();
+    return Token::unknown;
+  }
   m_operation = m_currChar;
   while (isOperation(nextChar())) {
     m_operation += m_currChar;
-  };
+  }
   return Token::unknown;
 }

@@ -12,6 +12,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   // parse body
   std::vector<std::unique_ptr<SyntaxTree>> result;
   while (m_lexer->getChar() != '}') {
+    std::cout << m_lexer->getChar() << '\n';
     if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
       return {};
@@ -137,7 +138,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
     m_lexer->nextToken();
     return parseMain();
   default:
-    std::cerr << m_lexer->getChar() << '\n';
+    std::cout << m_lexer->getChar() << '\n';
     llvm::errs() << "Unknown token\n";
     return {};
   }
