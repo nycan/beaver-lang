@@ -2,7 +2,6 @@
 
 // helper function for blocks
 std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
-  std::cout << "parsing block\n";
   // parse '{'
   if (m_lexer->getChar() != '{') {
     llvm::errs() << "Expected '{'.";
@@ -13,7 +12,6 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   // parse body
   std::vector<std::unique_ptr<SyntaxTree>> result;
   while (m_lexer->getChar() != '}') {
-    std::cout << m_lexer->getChar() << '\n';
     if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
       return {};
@@ -95,12 +93,12 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
-  std::cout << "parsing conditional\n";
   // parse 'if'
   m_lexer->nextToken();
 
   // parse condition
   auto condition = parseExpression();
+  std::cout << "debug" << m_lexer->getChar() << '\n';
   if (!condition) {
     return {};
   }
@@ -112,7 +110,6 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
   }
 
   // if an else block exists, parse it
-  // nullptr is used for a non-existant else block
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> elseBlock;
   if (m_lexer->getTok() == Token::elseTok) {
     // parse "else"
@@ -186,10 +183,12 @@ Parser::parseOpRHS(const int t_minPrec,
     // if the expression continues, parse it
     auto nextOp = getOpFromKey(m_lexer->getOperation());
     if(!nextOp.has_value()){
-      return t_leftSide;
+      return std::make_unique<BinaryOpAST>(
+        m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
     }
     // if the next operator is higher precedence, it needs to be handled before
     // this one parse recursively
+    
     if (op->precedence < nextOp->precedence) {
       rightSide = parseOpRHS(op->precedence + 1, std::move(*rightSide));
       if (!rightSide) {
