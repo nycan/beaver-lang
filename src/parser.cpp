@@ -2,6 +2,7 @@
 
 // helper function for blocks
 std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
+  std::cout << "parsing block\n";
   // parse '{'
   if (m_lexer->getChar() != '{') {
     llvm::errs() << "Expected '{'.";
@@ -82,7 +83,6 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 
     // separator
     if (m_lexer->getChar() != ',') {
-      std::cout << m_lexer->getChar() << '\n';
       llvm::errs() << "Expected ')' or ',' in argument list.\n";
       return {};
     }
@@ -95,6 +95,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
+  std::cout << "parsing conditional\n";
   // parse 'if'
   m_lexer->nextToken();
 
@@ -104,7 +105,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
     return {};
   }
 
-  // parse the "then"
+  // parse main block
   auto mainBlock = parseBlock();
   if (!mainBlock) {
     return {};
