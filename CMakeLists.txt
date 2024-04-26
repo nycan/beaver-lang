@@ -5,7 +5,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
-set(LLVM_DIR /usr/local/Cellar/llvm/17.0.6_1/lib/cmake/llvm)
+set(LLVM_DIR /usr/local/Cellar/llvm/18.1.4/lib/cmake/llvm)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 project(testlang VERSION 0.1
@@ -29,5 +29,12 @@ llvm_map_components_to_libnames(
   native
 )
 
-add_executable(testlang src/main.cpp)
+add_executable(testlang
+  src/main.cpp
+  src/lexer.cpp
+  src/parser.cpp
+  src/syntaxtree.cpp
+  src/operations.cpp
+  src/generator.cpp
+)
 target_link_libraries(testlang ${llvm_libs} ${targets})

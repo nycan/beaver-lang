@@ -1,116 +1,91 @@
 #ifndef TESTLANG_LEXER_HPP
 #define TESTLANG_LEXER_HPP
 
-#include <string>
 #include <cctype>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 // all tokens
-enum class Token{
-    UNKNOWN,
-    ENDFILE,
-    FUNC,
-    EXTERN,
-    IDENTIFIER,
-    NUMBER,
-    IF,
-    ELSE
+enum class Token {
+  unknown,
+  endFile,
+  func,
+  externTok,
+  identifier,
+  number,
+  ifTok,
+  elseTok,
+  returnTok
 };
 
-class Lexer{
-private:
-    // stored processed values
-    std::string m_identifier;
-    double m_numVal;
+class Lexer {
+protected:
+  // for error handling
+  unsigned m_lineNumber;
+  unsigned m_charPos;
 
-    // information
-    Token m_currTok;
-    char m_currChar;
-    char m_lastChar;
+  // way to get the next character depends on input method
+  virtual char processChar() = 0;
+
+private:
+  // stored processed values
+  std::string m_identifier;
+  double m_numVal;
+  std::string m_operation;
+
+  // information
+  Token m_currTok;
+  char m_currChar;
+  char m_lastChar;
+
+  // gives the lexer the next character, updates variables
+  char nextChar();
+
+  // read the next token
+  Token processToken();
 
 public:
-    Lexer(): m_identifier(""), m_numVal(0), 
-             m_currTok(Token::UNKNOWN), m_currChar(getchar()), m_lastChar(' ') {}
-    ~Lexer() = default;
+  Lexer()
+      : m_identifier(""), m_numVal(0), m_operation(""),
+        m_currTok(Token::unknown), m_currChar(' '), m_lastChar(' '),
+        m_lineNumber(1), m_charPos(1) {}
+  virtual ~Lexer() = default;
 
-    inline std::string getIdentifier() const {return m_identifier;}
-    inline double getNum() const {return m_numVal;}
-    inline Token getTok() const {return m_currTok;}
-    inline char getChar() const {return m_currChar;}
-    inline char prevChar() const {return m_lastChar;}
+  inline std::string getIdentifier() const { return m_identifier; }
+  inline double getNum() const { return m_numVal; }
+  inline std::string getOperation() const { return m_operation; }
+  inline Token getTok() const { return m_currTok; }
+  inline char getChar() const { return m_lastChar; }
 
-    // gives the lexer the next character, updates variables
-    char nextchar(){
-        m_lastChar = m_currChar;
-        return m_currChar = getchar();
-    }
+  inline unsigned getLine() const { return m_lineNumber; }
+  inline unsigned getPos() const { return m_charPos; }
 
-    //read the next token
-    Token processToken(){
-        //ignore whitespace
-        while(std::isspace(m_currChar)){
-            nextchar();
-        }
+  // almost the same as processToken(), but also update m_currTok.
+  inline Token nextToken() { return m_currTok = processToken(); }
+};
 
-        // Keywords and identifiers
-        if(std::isalpha(m_currChar)){
-            m_identifier = m_currChar;
-            // [A-z]([A-z]|[1-9])*
-            while(std::isalnum(nextchar())){
-                m_identifier += m_currChar;
-            }
+// with input file
+class FileLexer : public Lexer {
+private:
+  std::ifstream m_fileStream;
 
-            //keywords
-            if(m_identifier=="fn"){
-                return Token::FUNC;
-            }
-            if(m_identifier=="extern"){
-                return Token::EXTERN;
-            }
-            if(m_identifier=="if"){
-                return Token::IF;
-            }
-            if(m_identifier=="else"){
-                return Token::ELSE;
-            }
-            // if not a keyword, it's an identifier
-            return Token::IDENTIFIER;
-        }
+protected:
+  inline char processChar() override { return m_fileStream.get(); }
 
-        // Numbers
-        if(std::isdigit(m_currChar) || m_currChar=='.'){
-            std::string numStr;
-            do{
-                numStr += m_currChar;
-                nextchar();
-            } while (std::isdigit(m_currChar) || m_currChar=='.');
+public:
+  FileLexer(std::string t_fileName) : Lexer(), m_fileStream(t_fileName) {}
+  ~FileLexer() = default;
+};
 
-            m_numVal = std::stoi(numStr);
-            return Token::NUMBER;
-        }
+// read from stdin
+class StdinLexer : public Lexer {
+protected:
+  inline char processChar() override { return getchar(); }
 
-        // Comments
-        if(m_currChar=='#'){
-            do{
-                nextchar();
-            } while (m_currChar != EOF && m_currChar != '\n' && m_currChar != '\r');
-
-            if(m_currChar != EOF){
-                return nextToken();
-            }
-        }
-
-        if(m_currChar==EOF){
-            return Token::ENDFILE;
-        }
-
-        nextchar();
-        return Token::UNKNOWN;
-    }
-
-    //almost the same as processToken(), but also update m_currTok.
-    inline Token nextToken(){
-        return m_currTok = processToken();
-    }
+public:
+  StdinLexer() : Lexer() {}
+  ~StdinLexer() = default;
 };
 
 #endif // TESTLANG_LEXER_HPP

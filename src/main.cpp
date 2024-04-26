@@ -6,57 +6,105 @@
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/TargetParser/Host.h"
 
-int main(){
+// return the index of an option, if it exists
+size_t findOption(int argc, char **argv, const std::string &option) {
+  if (argc < 0) {
+    return 0;
+  }
+  auto result = std::find(argv, argv + argc, option);
+  if (result) {
+    return result - argv;
+  }
+  return 0;
+}
 
-    auto targetTriple = llvm::sys::getDefaultTargetTriple();
-
-    llvm::InitializeAllTargetInfos();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmParsers();
-    llvm::InitializeAllAsmPrinters();
-
-    std::string error;
-    auto target = llvm::TargetRegistry::lookupTarget(targetTriple,error);
-
-    if(!target){
-        llvm::errs() << error;
-        return 1;
+int main(int argc, char **argv) {
+  // get the string representing the system to compile to
+  std::string targetTriple = llvm::sys::getDefaultTargetTriple();
+  if (size_t argIndex = findOption(argc - 2, argv, "-target")) {
+    if (argv[argIndex + 1][0] == '-') {
+      llvm::errs() << "Expected target triple.\n";
+      return 1;
     }
+    targetTriple = argv[argIndex + 1];
+  }
 
-    auto CPU = "generic";
-    auto features = "";
+  // initialize stuff
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
 
-    llvm::TargetOptions options;
-    auto targetMachine = target->createTargetMachine(
-        targetTriple, CPU, features, options, llvm::Reloc::PIC_
-    );
+  // get the target from the triple
+  std::string error;
+  auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
 
-    auto generator = std::make_shared<Generator>();
-    generator->m_module->setDataLayout(targetMachine->createDataLayout());
-    generator->m_module->setTargetTriple(targetTriple);
+  if (!target) {
+    llvm::errs() << error << '\n';
+    return 1;
+  }
 
-    auto outputFile = "output.o";
-    std::error_code errorCode;
-    llvm::raw_fd_ostream outputStream(outputFile, errorCode, llvm::sys::fs::OF_None);
+  // also use defaults for cpu and features
+  auto CPU = "generic";
+  auto features = "";
 
-    if(errorCode){
-        llvm::errs() << "Could not open file: " << errorCode.message();
-        return 1;
+  // get the machine from the target
+  llvm::TargetOptions options;
+  auto targetMachine = target->createTargetMachine(targetTriple, CPU, features,
+                                                   options, llvm::Reloc::PIC_);
+
+  // initialize the generator
+  auto generator = std::make_shared<Generator>();
+  generator->m_module.setDataLayout(targetMachine->createDataLayout());
+  generator->m_module.setTargetTriple(targetTriple);
+
+  // get the output file
+  std::string outputFile = "output.o";
+  if (size_t argIndex = findOption(argc - 2, argv, "-o")) {
+    if (argv[argIndex + 1][0] == '-') {
+      llvm::errs() << "Expected output filename.\n";
+      return 1;
     }
+    outputFile = argv[argIndex + 1];
+  }
 
-    Lexer lex;
-    Parser parse(lex,generator);
-    parse();
+  // initialize the ouput stream
+  std::error_code errorCode;
+  llvm::raw_fd_ostream outputStream(outputFile, errorCode,
+                                    llvm::sys::fs::OF_None);
 
-    llvm::legacy::PassManager pass;
-    auto fileType = llvm::CodeGenFileType::ObjectFile;
+  if (errorCode) {
+    llvm::errs() << "Could not open file: " << errorCode.message() << '\n';
+    return 1;
+  }
 
-    if(targetMachine->addPassesToEmitFile(pass, outputStream, nullptr, fileType)){
-        llvm::errs() << "Invalid file type";
-        return 1;
-    }
+  // create the lexer and parser
+  if (argc < 2) {
+    llvm::errs() << "Expected input file.\n";
+  }
+  std::unique_ptr<Lexer> lex = std::make_unique<FileLexer>(argv[argc - 1]);
+  Parser parse(std::move(lex), generator);
 
-    pass.run(*generator->m_module);
-    outputStream.flush();
+  // parse and generate code
+  if (parse()) {
+    return 1;
+  }
+
+  llvm::legacy::PassManager pass;
+  llvm::CodeGenFileType outputType;
+  if (findOption(argc, argv, "-S")) {
+    outputType = llvm::CodeGenFileType::AssemblyFile;
+  } else {
+    outputType = llvm::CodeGenFileType::ObjectFile;
+  }
+
+  if (targetMachine->addPassesToEmitFile(pass, outputStream, nullptr,
+                                         outputType)) {
+    llvm::errs() << "Invalid file type\n";
+    return 1;
+  }
+
+  pass.run(generator->m_module);
+  outputStream.flush();
 }
