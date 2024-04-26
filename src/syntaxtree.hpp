@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <optional>
 
 // base AST class
 class SyntaxTree {
@@ -26,7 +27,7 @@ public:
   SyntaxTree(std::shared_ptr<Generator> t_generator)
       : m_generator(t_generator) {}
   virtual ~SyntaxTree() = default;
-  virtual llvm::Value *codegen() = 0;
+  virtual std::optional<llvm::Value*> codegen() = 0;
   virtual bool terminatesBlock() { return false; }
 };
 
@@ -37,7 +38,7 @@ private:
 public:
   NumberAST(std::shared_ptr<Generator> t_generator, const double t_value)
       : SyntaxTree(t_generator), m_value(t_value) {}
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
 };
 
 class VariableAST : public SyntaxTree {
@@ -47,7 +48,7 @@ private:
 public:
   VariableAST(std::shared_ptr<Generator> t_generator, const std::string &t_name)
       : SyntaxTree(t_generator), m_name(t_name) {}
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
 };
 
 // binary operations
@@ -62,7 +63,7 @@ public:
               std::unique_ptr<SyntaxTree> t_rhs)
       : SyntaxTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),
         m_rhs(std::move(t_rhs)) {}
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
 };
 
 // function calls
@@ -76,7 +77,7 @@ public:
           std::vector<std::unique_ptr<SyntaxTree>> t_args)
       : SyntaxTree(t_generator), m_callee(t_callee), m_args(std::move(t_args)) {
   }
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
 };
 
 // if/else
@@ -96,7 +97,7 @@ public:
         m_elseBlock(std::move(t_elseBlock)) {}
   ~ConditionalAST() = default;
 
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
 };
 
 class PrototypeAST {
@@ -112,7 +113,7 @@ public:
   ~PrototypeAST() = default;
   const std::string &getName() const { return m_name; }
 
-  llvm::Function *codegen();
+  std::optional<llvm::Function*> codegen();
 };
 
 // return values
@@ -126,7 +127,7 @@ public:
       : SyntaxTree(t_generator), m_expression(std::move(t_expression)) {}
   ~ReturnAST() = default;
 
-  llvm::Value *codegen() override;
+  std::optional<llvm::Value*> codegen() override;
   virtual bool terminatesBlock() override { return true; }
 };
 
@@ -145,7 +146,7 @@ public:
         m_body(std::move(t_body)) {}
   ~FunctionAST() = default;
 
-  llvm::Function *codegen();
+  std::optional<llvm::Function*> codegen();
 };
 
 #endif // TESTLANG_SYNTAXTREE_HPP

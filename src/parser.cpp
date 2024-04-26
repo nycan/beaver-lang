@@ -318,7 +318,7 @@ bool Parser::operator()() {
       return false;
     case Token::func:
       if (auto resAST = parseDefinition()) {
-        if (auto *resIR = (*resAST)->codegen()) {
+        if (auto resIR = (*resAST)->codegen()) {
           std::cerr << "Successfully parsed function definition.\n";
         } else {
           hasErrors = true;
@@ -330,7 +330,7 @@ bool Parser::operator()() {
       break;
     case Token::externTok:
       if (auto resAST = parseExtern()) {
-        if (auto *resIR = (*resAST)->codegen()) {
+        if (auto resIR = (*resAST)->codegen()) {
           std::cerr << "Successfully parsed extern.\n";
         } else {
           hasErrors = true;
@@ -345,9 +345,9 @@ bool Parser::operator()() {
         m_lexer->nextToken();
       } else {
         if (auto resAST = parseTopLevel()) {
-          if (auto *resIR = (*resAST)->codegen()) {
+          if (auto resIR = (*resAST)->codegen()) {
             std::cerr << "Successfully parsed top-level expression.\n";
-            resIR->removeFromParent();
+            (*resIR)->removeFromParent();
           } else {
             hasErrors = true;
           }
