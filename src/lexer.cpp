@@ -19,8 +19,8 @@ bool isOperation(char t_character) {
   if (std::isspace(t_character)) {
     return false;
   }
-  static const char invalid[8] = {'(',')','{','}','[',']',';',','};
-  for (int idx = 0; idx<8; ++idx) {
+  static const char invalid[8] = {'(', ')', '{', '}', '[', ']', ';', ','};
+  for (int idx = 0; idx < 8; ++idx) {
     if (t_character == invalid[idx]) {
       return false;
     }
@@ -89,7 +89,7 @@ Token Lexer::processToken() {
     return Token::endFile;
   }
 
-  if(!isOperation(m_currChar)) {
+  if (!isOperation(m_currChar)) {
     m_operation = "";
     nextChar();
     return Token::unknown;

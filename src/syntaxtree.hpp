@@ -1,6 +1,8 @@
 #ifndef TESTLANG_SYNTAXTREE_HPP
 #define TESTLANG_SYNTAXTREE_HPP
 
+#include "generator.hpp"
+#include "operations.hpp"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -9,14 +11,12 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
-#include "operations.hpp"
-#include "generator.hpp"
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 // base AST class
 class SyntaxTree {
@@ -27,7 +27,7 @@ public:
   SyntaxTree(std::shared_ptr<Generator> t_generator)
       : m_generator(t_generator) {}
   virtual ~SyntaxTree() = default;
-  virtual std::optional<llvm::Value*> codegen() = 0;
+  virtual std::optional<llvm::Value *> codegen() = 0;
   virtual bool terminatesBlock() { return false; }
 };
 
@@ -38,7 +38,7 @@ private:
 public:
   NumberAST(std::shared_ptr<Generator> t_generator, const double t_value)
       : SyntaxTree(t_generator), m_value(t_value) {}
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
 };
 
 class VariableAST : public SyntaxTree {
@@ -48,7 +48,7 @@ private:
 public:
   VariableAST(std::shared_ptr<Generator> t_generator, const std::string &t_name)
       : SyntaxTree(t_generator), m_name(t_name) {}
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
 };
 
 // binary operations
@@ -63,7 +63,7 @@ public:
               std::unique_ptr<SyntaxTree> t_rhs)
       : SyntaxTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),
         m_rhs(std::move(t_rhs)) {}
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
 };
 
 // function calls
@@ -77,7 +77,7 @@ public:
           std::vector<std::unique_ptr<SyntaxTree>> t_args)
       : SyntaxTree(t_generator), m_callee(t_callee), m_args(std::move(t_args)) {
   }
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
 };
 
 // if/else
@@ -88,16 +88,17 @@ private:
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> m_elseBlock;
 
 public:
-  ConditionalAST(std::shared_ptr<Generator> t_generator,
-                 std::unique_ptr<SyntaxTree> t_condition,
-                 std::vector<std::unique_ptr<SyntaxTree>> t_mainBlock,
-                 std::optional<std::vector<std::unique_ptr<SyntaxTree>>> t_elseBlock)
+  ConditionalAST(
+      std::shared_ptr<Generator> t_generator,
+      std::unique_ptr<SyntaxTree> t_condition,
+      std::vector<std::unique_ptr<SyntaxTree>> t_mainBlock,
+      std::optional<std::vector<std::unique_ptr<SyntaxTree>>> t_elseBlock)
       : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
         m_mainBlock(std::move(t_mainBlock)),
         m_elseBlock(std::move(t_elseBlock)) {}
   ~ConditionalAST() = default;
 
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
 };
 
 class PrototypeAST {
@@ -113,7 +114,7 @@ public:
   ~PrototypeAST() = default;
   const std::string &getName() const { return m_name; }
 
-  std::optional<llvm::Function*> codegen();
+  std::optional<llvm::Function *> codegen();
 };
 
 // return values
@@ -127,7 +128,7 @@ public:
       : SyntaxTree(t_generator), m_expression(std::move(t_expression)) {}
   ~ReturnAST() = default;
 
-  std::optional<llvm::Value*> codegen() override;
+  std::optional<llvm::Value *> codegen() override;
   virtual bool terminatesBlock() override { return true; }
 };
 
@@ -146,7 +147,7 @@ public:
         m_body(std::move(t_body)) {}
   ~FunctionAST() = default;
 
-  std::optional<llvm::Function*> codegen();
+  std::optional<llvm::Function *> codegen();
 };
 
 #endif // TESTLANG_SYNTAXTREE_HPP

@@ -134,7 +134,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
     m_lexer->nextToken();
     return parseMain();
   default:
-    llvm::errs() << "Unknown token: " << m_lexer->getChar() <<  '\n';
+    llvm::errs() << "Unknown token: " << m_lexer->getChar() << '\n';
     return {};
   }
 }
@@ -164,7 +164,7 @@ Parser::parseOpRHS(const int t_minPrec,
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
-    if(!op.has_value()) {
+    if (!op.has_value()) {
       return t_leftSide;
     }
     m_lexer->nextToken();
@@ -182,13 +182,13 @@ Parser::parseOpRHS(const int t_minPrec,
 
     // if the expression continues, parse it
     auto nextOp = getOpFromKey(m_lexer->getOperation());
-    if(!nextOp.has_value()){
+    if (!nextOp.has_value()) {
       return std::make_unique<BinaryOpAST>(
-        m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
+          m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
     }
     // if the next operator is higher precedence, it needs to be handled before
     // this one parse recursively
-    
+
     if (op->precedence < nextOp->precedence) {
       rightSide = parseOpRHS(op->precedence + 1, std::move(*rightSide));
       if (!rightSide) {

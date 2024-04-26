@@ -3,8 +3,8 @@
 
 #include <cctype>
 #include <fstream>
-#include <string>
 #include <iostream>
+#include <string>
 
 // all tokens
 enum class Token {
@@ -47,8 +47,9 @@ private:
 
 public:
   Lexer()
-      : m_identifier(""), m_numVal(0), m_operation(""), m_currTok(Token::unknown),
-        m_currChar(' '), m_lastChar(' '), m_lineNumber(1), m_charPos(1) {}
+      : m_identifier(""), m_numVal(0), m_operation(""),
+        m_currTok(Token::unknown), m_currChar(' '), m_lastChar(' '),
+        m_lineNumber(1), m_charPos(1) {}
   virtual ~Lexer() = default;
 
   inline std::string getIdentifier() const { return m_identifier; }

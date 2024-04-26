@@ -1,10 +1,10 @@
 #include "syntaxtree.hpp"
 
-std::optional<llvm::Value*> NumberAST::codegen() {
+std::optional<llvm::Value *> NumberAST::codegen() {
   return llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(m_value));
 };
 
-std::optional<llvm::Value*> VariableAST::codegen() {
+std::optional<llvm::Value *> VariableAST::codegen() {
   // search in named variables
   llvm::Value *variable = m_generator->m_namedValues[m_name];
   if (!variable) {
@@ -14,16 +14,16 @@ std::optional<llvm::Value*> VariableAST::codegen() {
   return variable;
 };
 
-std::optional<llvm::Value*> BinaryOpAST::codegen() {
-  std::optional<llvm::Value*> leftCode = m_lhs->codegen();
-  std::optional<llvm::Value*> rightCode = m_rhs->codegen();
+std::optional<llvm::Value *> BinaryOpAST::codegen() {
+  std::optional<llvm::Value *> leftCode = m_lhs->codegen();
+  std::optional<llvm::Value *> rightCode = m_rhs->codegen();
   if (!leftCode || !rightCode) {
     return {};
   }
-  return m_op.codegen(m_generator,*leftCode,*rightCode);
+  return m_op.codegen(m_generator, *leftCode, *rightCode);
 };
 
-std::optional<llvm::Value*> CallAST::codegen() {
+std::optional<llvm::Value *> CallAST::codegen() {
   // search for the function being called
   llvm::Function *calledFunction = m_generator->m_module.getFunction(m_callee);
   if (!calledFunction) {
@@ -41,7 +41,7 @@ std::optional<llvm::Value*> CallAST::codegen() {
   // generate code for each argument
   std::vector<llvm::Value *> argsCode(numArgs);
   for (size_t i = 0; i < numArgs; ++i) {
-    std::optional<llvm::Value*> line = m_args[i]->codegen();
+    std::optional<llvm::Value *> line = m_args[i]->codegen();
     if (!line) {
       return {};
     }
@@ -51,18 +51,18 @@ std::optional<llvm::Value*> CallAST::codegen() {
   return m_generator->m_builder.CreateCall(calledFunction, argsCode);
 };
 
-std::optional<llvm::Value*> ConditionalAST::codegen() {
+std::optional<llvm::Value *> ConditionalAST::codegen() {
   // creates main block, else block, and merge block
   // then assigns the correct branching
 
   // condition
-  std::optional<llvm::Value*> conditionCode = m_condition->codegen();
+  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
   if (!conditionCode) {
     return {};
   }
 
   // compare to 0
-  llvm::Value* comparisonCode = m_generator->m_builder.CreateFCmpONE(
+  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
       *conditionCode,
       llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
 
@@ -72,8 +72,7 @@ std::optional<llvm::Value*> ConditionalAST::codegen() {
   llvm::BasicBlock *mainBB =
       llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
   llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(m_generator->m_context);
-  llvm::BasicBlock *mergedBB =
-      llvm::BasicBlock::Create(m_generator->m_context);
+  llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(m_generator->m_context);
 
   // create the conditional branch
   m_generator->m_builder.CreateCondBr(comparisonCode, mainBB, elseBB);
@@ -82,7 +81,7 @@ std::optional<llvm::Value*> ConditionalAST::codegen() {
 
   bool mainTerminated = false;
   for (auto &line : m_mainBlock) {
-    std::optional<llvm::Value*> mainCode = line->codegen();
+    std::optional<llvm::Value *> mainCode = line->codegen();
     if (!mainCode) {
       return {};
     }
@@ -106,9 +105,9 @@ std::optional<llvm::Value*> ConditionalAST::codegen() {
 
   // generate code for the else block
   bool elseTerminated = false;
-  if(m_elseBlock){
+  if (m_elseBlock) {
     for (auto &line : *m_elseBlock) {
-      std::optional<llvm::Value*> elseCode = line->codegen();
+      std::optional<llvm::Value *> elseCode = line->codegen();
       if (!elseCode) {
         return {};
       }
@@ -142,7 +141,7 @@ std::optional<llvm::Value*> ConditionalAST::codegen() {
   return mergedBB;
 }
 
-std::optional<llvm::Function*> PrototypeAST::codegen() {
+std::optional<llvm::Function *> PrototypeAST::codegen() {
   // all doubles for now
   std::vector<llvm::Type *> tmpType(
       m_args.size(), llvm::Type::getDoubleTy(m_generator->m_context));
@@ -151,9 +150,8 @@ std::optional<llvm::Function*> PrototypeAST::codegen() {
       llvm::Type::getDoubleTy(m_generator->m_context), tmpType, false);
 
   // add the function to the functions table
-  llvm::Function *funcCode =
-      llvm::Function::Create(funcType, llvm::Function::InternalLinkage, m_name,
-                             m_generator->m_module);
+  llvm::Function *funcCode = llvm::Function::Create(
+      funcType, llvm::Function::InternalLinkage, m_name, m_generator->m_module);
 
   // add the argument to the variables table
   size_t it = 0;
@@ -164,16 +162,16 @@ std::optional<llvm::Function*> PrototypeAST::codegen() {
   return funcCode;
 }
 
-std::optional<llvm::Value*> ReturnAST::codegen() {
+std::optional<llvm::Value *> ReturnAST::codegen() {
   if (auto exprCode = m_expression->codegen()) {
     return m_generator->m_builder.CreateRet(*exprCode);
   }
   return {};
 }
 
-std::optional<llvm::Function*> FunctionAST::codegen() {
+std::optional<llvm::Function *> FunctionAST::codegen() {
   // check for existing function
-  std::optional<llvm::Function*> funcCode =
+  std::optional<llvm::Function *> funcCode =
       m_generator->m_module.getFunction(m_prototype->getName());
 
   // create if it doesn't exist
@@ -190,9 +188,9 @@ std::optional<llvm::Function*> FunctionAST::codegen() {
   }
 
   // parse the body
-  llvm::BasicBlock *definitionBlock =
-      llvm::BasicBlock::Create(m_generator->m_context, "",
-                               *funcCode); // creates the "block" to be jumped to
+  llvm::BasicBlock *definitionBlock = llvm::BasicBlock::Create(
+      m_generator->m_context, "",
+      *funcCode); // creates the "block" to be jumped to
 
   // set code insertion point
   m_generator->m_builder.SetInsertPoint(definitionBlock);

@@ -7,13 +7,13 @@
 #include "llvm/TargetParser/Host.h"
 
 // return the index of an option, if it exists
-size_t findOption(int argc, char **argv, const std::string& option) {
+size_t findOption(int argc, char **argv, const std::string &option) {
   if (argc < 0) {
     return 0;
   }
-  auto result = std::find(argv, argv+argc, option);
+  auto result = std::find(argv, argv + argc, option);
   if (result) {
-    return result-argv;
+    return result - argv;
   }
   return 0;
 }
@@ -21,12 +21,12 @@ size_t findOption(int argc, char **argv, const std::string& option) {
 int main(int argc, char **argv) {
   // get the string representing the system to compile to
   std::string targetTriple = llvm::sys::getDefaultTargetTriple();
-  if (size_t argIndex = findOption(argc-2, argv, "-target")) {
-    if (argv[argIndex+1][0] == '-') {
+  if (size_t argIndex = findOption(argc - 2, argv, "-target")) {
+    if (argv[argIndex + 1][0] == '-') {
       llvm::errs() << "Expected target triple.\n";
       return 1;
     }
-    targetTriple = argv[argIndex+1];
+    targetTriple = argv[argIndex + 1];
   }
 
   // initialize stuff
@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
 
   // get the output file
   std::string outputFile = "output.o";
-  if (size_t argIndex = findOption(argc-2, argv, "-o")) {
-    if (argv[argIndex+1][0] == '-') {
+  if (size_t argIndex = findOption(argc - 2, argv, "-o")) {
+    if (argv[argIndex + 1][0] == '-') {
       llvm::errs() << "Expected output filename.\n";
       return 1;
     }
-    outputFile = argv[argIndex+1];
+    outputFile = argv[argIndex + 1];
   }
 
   // initialize the ouput stream
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   if (argc < 2) {
     llvm::errs() << "Expected input file.\n";
   }
-  std::unique_ptr<Lexer> lex = std::make_unique<FileLexer>(argv[argc-1]);
+  std::unique_ptr<Lexer> lex = std::make_unique<FileLexer>(argv[argc - 1]);
   Parser parse(std::move(lex), generator);
 
   // parse and generate code
