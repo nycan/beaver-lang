@@ -79,8 +79,7 @@ llvm::Value *ConditionalAST::codegen() {
 
   m_generator->m_builder.SetInsertPoint(mainBB);
 
-  // TODO: handle phi nodes
-  bool terminated = false;
+  bool mainTerminated = false;
   for (auto &line : m_mainBlock) {
     llvm::Value *mainCode = line->codegen();
     if (!mainCode) {
@@ -89,13 +88,13 @@ llvm::Value *ConditionalAST::codegen() {
 
     // if block is returns, then don't worry processing the rest
     if (line->terminatesBlock()) {
-      terminated = true;
+      mainTerminated = true;
       break;
     }
   }
 
   // after it's finished, go to the merged block
-  if (!terminated) {
+  if (!mainTerminated) {
     m_generator->m_builder.CreateBr(mergedBB);
   }
   mainBB = m_generator->m_builder.GetInsertBlock();
@@ -105,7 +104,7 @@ llvm::Value *ConditionalAST::codegen() {
   m_generator->m_builder.SetInsertPoint(elseBB);
 
   // generate code for the else block
-  terminated = false;
+  bool elseTerminated = false;
   if(m_elseBlock){
     for (auto &line : *m_elseBlock) {
       llvm::Value *elseCode = line->codegen();
@@ -114,14 +113,14 @@ llvm::Value *ConditionalAST::codegen() {
       }
 
       if (line->terminatesBlock()) {
-        terminated = true;
+        elseTerminated = true;
         break;
       }
     }
   }
 
   // go back to merged blcok
-  if (!terminated) {
+  if (!elseTerminated) {
     m_generator->m_builder.CreateBr(mergedBB);
   }
 
@@ -129,13 +128,15 @@ llvm::Value *ConditionalAST::codegen() {
   elseBB = m_generator->m_builder.GetInsertBlock();
 
   // create merged block
-  functionCode->insert(functionCode->end(), mergedBB);
-  m_generator->m_builder.SetInsertPoint(mergedBB);
-  llvm::PHINode *phiNode = m_generator->m_builder.CreatePHI(
-      llvm::Type::getDoubleTy(m_generator->m_context), 2);
+  if (!elseTerminated || !mainTerminated) {
+    functionCode->insert(functionCode->end(), mergedBB);
+    m_generator->m_builder.SetInsertPoint(mergedBB);
+  }
+  // llvm::PHINode *phiNode = m_generator->m_builder.CreatePHI(
+  //     llvm::Type::getDoubleTy(m_generator->m_context), 2);
   // phiNode->addIncoming(mainCode, mainBB);
   // phiNode->addIncoming(elseCode, elseBB);
-  return phiNode;
+  // return phiNode;
 }
 
 llvm::Function *PrototypeAST::codegen() {
@@ -208,7 +209,9 @@ llvm::Function *FunctionAST::codegen() {
   }
 
   // verify the generated code
-  llvm::verifyFunction(*funcCode);
+  if (llvm::verifyFunction(*funcCode)) {
+    llvm::errs() << "Errors found in code generation.\n";
+  }
 
   // run optimizations
   m_generator->m_funcPass.run(*funcCode, m_generator->m_funcAnalyzer);

@@ -90,6 +90,7 @@ Token Lexer::processToken() {
   }
 
   if(!isOperation(m_currChar)) {
+    m_operation = "";
     nextChar();
     return Token::unknown;
   }

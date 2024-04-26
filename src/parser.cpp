@@ -74,7 +74,6 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
     }
 
     // end of arg list
-    m_lexer->nextToken();
     if (m_lexer->getChar() == ')') {
       break;
     }
@@ -98,7 +97,6 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
 
   // parse condition
   auto condition = parseExpression();
-  std::cout << "debug" << m_lexer->getChar() << '\n';
   if (!condition) {
     return {};
   }
@@ -136,8 +134,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
     m_lexer->nextToken();
     return parseMain();
   default:
-    std::cout << m_lexer->getChar() << '\n';
-    llvm::errs() << "Unknown token\n";
+    llvm::errs() << "Unknown token: " << m_lexer->getChar() <<  '\n';
     return {};
   }
 }
@@ -153,6 +150,9 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMain() {
     return parseConditional();
   case Token::returnTok:
     return parseReturn();
+  case Token::elseTok:
+    llvm::errs() << "Got 'else' with no 'if' to match.\n";
+    return {};
   default:
     return handleUnknown();
   }

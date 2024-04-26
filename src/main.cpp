@@ -8,6 +8,9 @@
 
 // return the index of an option, if it exists
 size_t findOption(int argc, char **argv, const std::string& option) {
+  if (argc < 0) {
+    return 0;
+  }
   auto result = std::find(argv, argv+argc, option);
   if (result) {
     return result-argv;
@@ -20,7 +23,7 @@ int main(int argc, char **argv) {
   std::string targetTriple = llvm::sys::getDefaultTargetTriple();
   if (size_t argIndex = findOption(argc-2, argv, "-target")) {
     if (argv[argIndex+1][0] == '-') {
-      llvm::errs() << "Expected target triple.";
+      llvm::errs() << "Expected target triple.\n";
       return 1;
     }
     targetTriple = argv[argIndex+1];
@@ -38,7 +41,7 @@ int main(int argc, char **argv) {
   auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
 
   if (!target) {
-    llvm::errs() << error;
+    llvm::errs() << error << '\n';
     return 1;
   }
 
@@ -60,7 +63,7 @@ int main(int argc, char **argv) {
   std::string outputFile = "output.o";
   if (size_t argIndex = findOption(argc-2, argv, "-o")) {
     if (argv[argIndex+1][0] == '-') {
-      llvm::errs() << "Expected output filename.";
+      llvm::errs() << "Expected output filename.\n";
       return 1;
     }
     outputFile = argv[argIndex+1];
@@ -72,11 +75,14 @@ int main(int argc, char **argv) {
                                     llvm::sys::fs::OF_None);
 
   if (errorCode) {
-    llvm::errs() << "Could not open file: " << errorCode.message();
+    llvm::errs() << "Could not open file: " << errorCode.message() << '\n';
     return 1;
   }
 
   // create the lexer and parser
+  if (argc < 2) {
+    llvm::errs() << "Expected input file.\n";
+  }
   std::unique_ptr<Lexer> lex = std::make_unique<FileLexer>(argv[argc-1]);
   Parser parse(std::move(lex), generator);
 
@@ -95,7 +101,7 @@ int main(int argc, char **argv) {
 
   if (targetMachine->addPassesToEmitFile(pass, outputStream, nullptr,
                                          outputType)) {
-    llvm::errs() << "Invalid file type";
+    llvm::errs() << "Invalid file type\n";
     return 1;
   }
 
