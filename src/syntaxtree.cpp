@@ -215,6 +215,8 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
     return {};
   }
 
+  (*funcCode)->setCallingConv(llvm::CallingConv::C);
+
   // run optimizations
   m_generator->m_funcPass.run(**funcCode, m_generator->m_funcAnalyzer);
   return funcCode;
