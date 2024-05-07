@@ -1,0 +1,4 @@
+#ifndef TESTLANG_JIT_HPP
+#define TESTLANG_JIT_HPP
+
+#endif // TESTLANG_JIT_HPP

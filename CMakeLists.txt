@@ -36,5 +36,6 @@ add_executable(testlang
   src/syntaxtree.cpp
   src/operations.cpp
   src/generator.cpp
+  src/jit.cpp
 )
 target_link_libraries(testlang ${llvm_libs} ${targets})
