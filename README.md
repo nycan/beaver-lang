@@ -1,5 +1,6 @@
 # Test language
-A language built with LLVM for CS20. Still in early stages of development.
+A language built with LLVM for CS20. Still in early stages of development. \\
+Originally based on the LLVM Kaleidoscope tutorial
 
 ## Installation instructions
 1. Make sure CMake and Clang++ are installed.

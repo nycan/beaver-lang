@@ -6,6 +6,12 @@
 #include <cctype>
 #include <iostream>
 
+enum class ParserStatus {
+  ok,
+  end,
+  error
+};
+
 class Parser {
 private:
   std::unique_ptr<Lexer> m_lexer;
@@ -29,10 +35,12 @@ private:
 
 public:
   Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)
-      : m_lexer(std::move(t_lexer)), m_genData(t_genData) {}
+      : m_lexer(std::move(t_lexer)), m_genData(t_genData) {
+        m_lexer->nextToken();
+      }
   ~Parser() = default;
 
-  bool operator()();
+  ParserStatus parseOuter();
 };
 
 #endif // TESTLANG_PARSER_HPP

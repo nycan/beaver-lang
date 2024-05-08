@@ -307,57 +307,33 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
   return {};
 }
 
-// temporary main function
-bool Parser::operator()() {
-  m_lexer->nextToken();
+// parses outer-level expressions such as functions and externs
+ParserStatus Parser::parseOuter() {
   bool hasErrors = false;
 
-  while (true) {
-    switch (m_lexer->getTok()) {
-    case Token::endFile:
-      return false;
-    case Token::func:
-      if (auto resAST = parseDefinition()) {
-        if (auto resIR = (*resAST)->codegen()) {
-          std::cerr << "Successfully parsed function definition.\n";
-        } else {
-          hasErrors = true;
-        }
-      } else {
-        hasErrors = true;
-        m_lexer->nextToken();
-      }
-      break;
-    case Token::externTok:
-      if (auto resAST = parseExtern()) {
-        if (auto resIR = (*resAST)->codegen()) {
-          std::cerr << "Successfully parsed extern.\n";
-        } else {
-          hasErrors = true;
-        }
-      } else {
-        hasErrors = true;
-        m_lexer->nextToken();
-      }
-      break;
-    default:
-      if (m_lexer->getChar() == ';') {
-        m_lexer->nextToken();
-      } else {
-        if (auto resAST = parseTopLevel()) {
-          if (auto resIR = (*resAST)->codegen()) {
-            std::cerr << "Successfully parsed top-level expression.\n";
-            (*resIR)->removeFromParent();
-          } else {
-            hasErrors = true;
-          }
-        } else {
-          hasErrors = true;
-          m_lexer->nextToken();
-        }
-      }
-      break;
+  switch (m_lexer->getTok()) {
+  case Token::endFile:
+    return ParserStatus::end;
+  case Token::func:
+    auto resAST = parseDefinition();
+    if (!resAST) {
+      return ParserStatus::error;
     }
+    if ((*resAST)->codegen()) {
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
+  case Token::externTok:
+    auto resAST = parseExtern();
+    if ((*resAST)->codegen()) {
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
+  default:
+    if (m_lexer->getChar() == ';') {
+      m_lexer->nextToken();
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
   }
-  return hasErrors;
 }
