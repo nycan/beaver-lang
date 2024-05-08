@@ -6,11 +6,7 @@
 #include <cctype>
 #include <iostream>
 
-enum class ParserStatus {
-  ok,
-  end,
-  error
-};
+enum class ParserStatus { ok, end, error };
 
 class Parser {
 private:
@@ -36,8 +32,8 @@ private:
 public:
   Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)
       : m_lexer(std::move(t_lexer)), m_genData(t_genData) {
-        m_lexer->nextToken();
-      }
+    m_lexer->nextToken();
+  }
   ~Parser() = default;
 
   ParserStatus parseOuter();
