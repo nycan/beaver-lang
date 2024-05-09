@@ -87,8 +87,12 @@ int main(int argc, char **argv) {
   Parser parse(std::move(lex), generator);
 
   // parse and generate code
-  if (parse()) {
-    return 1;
+  ParserStatus ps = parse.parseOuter();
+  while (ps != ParserStatus::end) {
+    ps = parse.parseOuter();
+    if (ps == ParserStatus::error) {
+      return 1;
+    }
   }
 
   llvm::legacy::PassManager pass;

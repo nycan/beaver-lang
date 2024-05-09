@@ -309,12 +309,10 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
 
 // parses outer-level expressions such as functions and externs
 ParserStatus Parser::parseOuter() {
-  bool hasErrors = false;
-
   switch (m_lexer->getTok()) {
-  case Token::endFile:
+  case Token::endFile: {
     return ParserStatus::end;
-  case Token::func:
+  } case Token::func: {
     auto resAST = parseDefinition();
     if (!resAST) {
       return ParserStatus::error;
@@ -323,17 +321,18 @@ ParserStatus Parser::parseOuter() {
       return ParserStatus::ok;
     }
     return ParserStatus::error;
-  case Token::externTok:
+  } case Token::externTok: {
     auto resAST = parseExtern();
     if ((*resAST)->codegen()) {
       return ParserStatus::ok;
     }
     return ParserStatus::error;
-  default:
+  } default: {
     if (m_lexer->getChar() == ';') {
       m_lexer->nextToken();
       return ParserStatus::ok;
     }
     return ParserStatus::error;
+  }
   }
 }
