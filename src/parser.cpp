@@ -16,7 +16,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
       llvm::errs() << "Expected '}'.";
       return {};
     }
-    if (auto line = parseMainExpr()) {
+    if (auto line = parseInner()) {
       result.push_back(std::move(*line));
     } else {
       return {};
@@ -147,11 +147,13 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMainExpr() {
   case Token::number:
     return parseNum();
   case Token::ifTok:
-    return parseConditional();
+    llvm::errs() << "Unexpected conditional statement in expression.\n";
+    return {};
   case Token::returnTok:
-    return parseReturn();
+    llvm::errs() << "Unexpected return statement in expression.\n";
+    return {};
   case Token::elseTok:
-    llvm::errs() << "Got 'else' with no 'if' to match.\n";
+    llvm::errs() << "Unexpected 'else' in expression\n";
     return {};
   default:
     return handleUnknown();
