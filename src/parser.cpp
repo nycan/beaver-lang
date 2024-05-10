@@ -158,6 +158,13 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMain() {
   }
 }
 
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
+  switch(m_lexer->getTok()) {
+  case Token::ifTok:
+    return parseConditional();
+  }
+}
+
 std::optional<std::unique_ptr<SyntaxTree>>
 Parser::parseOpRHS(const int t_minPrec,
                    std::unique_ptr<SyntaxTree> t_leftSide) {

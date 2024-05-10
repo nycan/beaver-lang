@@ -21,6 +21,7 @@ private:
   std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
   std::optional<std::unique_ptr<SyntaxTree>> handleUnknown();
   std::optional<std::unique_ptr<SyntaxTree>> parseMain();
+  std::optional<std::unique_ptr<SyntaxTree>> parseInner();
   std::optional<std::unique_ptr<SyntaxTree>>
   parseOpRHS(const int t_minPrec, std::unique_ptr<SyntaxTree> t_leftSide);
   std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
