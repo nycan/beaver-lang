@@ -16,7 +16,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
       llvm::errs() << "Expected '}'.";
       return {};
     }
-    if (auto line = parseMain()) {
+    if (auto line = parseMainExpr()) {
       result.push_back(std::move(*line));
     } else {
       return {};
@@ -132,15 +132,15 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
     return parseParens();
   case ';':
     m_lexer->nextToken();
-    return parseMain();
+    return parseMainExpr();
   default:
     llvm::errs() << "Unknown token: " << m_lexer->getChar() << '\n';
     return {};
   }
 }
 
-// main parse function
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMain() {
+// parse one "element" of an expression
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMainExpr() {
   switch (m_lexer->getTok()) {
   case Token::identifier:
     return parseIdentifier();
@@ -155,13 +155,6 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMain() {
     return {};
   default:
     return handleUnknown();
-  }
-}
-
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
-  switch(m_lexer->getTok()) {
-  case Token::ifTok:
-    return parseConditional();
   }
 }
 
@@ -182,7 +175,7 @@ Parser::parseOpRHS(const int t_minPrec,
     }
 
     // parse right side
-    auto rightSide = parseMain();
+    auto rightSide = parseMainExpr();
     if (!rightSide) {
       return {};
     }
@@ -209,7 +202,7 @@ Parser::parseOpRHS(const int t_minPrec,
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseExpression() {
-  auto leftSide = parseMain();
+  auto leftSide = parseMainExpr();
   if (!leftSide) {
     return {};
   }
@@ -269,7 +262,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseReturn() {
   // parse "ret"
   m_lexer->nextToken();
 
-  if (auto resAST = parseMain()) {
+  if (auto resAST = parseMainExpr()) {
     return std::make_unique<ReturnAST>(m_genData, std::move(*resAST));
   }
   return {};
@@ -312,6 +305,21 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
                                          std::move(exprBlock));
   }
   return {};
+}
+
+// parse inner lines such as conditionals, returns and expressions
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
+  switch(m_lexer->getTok()) {
+  case Token::ifTok:
+    return parseConditional();
+  case Token::returnTok:
+    return parseReturn();
+  case Token::elseTok:
+    llvm::errs() << "Got 'else' with no 'if' to match.\n";
+    return {};
+  default:
+    return parseExpression();
+  }
 }
 
 // parses outer-level expressions such as functions and externs

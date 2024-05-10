@@ -20,8 +20,7 @@ private:
   std::optional<std::unique_ptr<SyntaxTree>> parseIdentifier();
   std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
   std::optional<std::unique_ptr<SyntaxTree>> handleUnknown();
-  std::optional<std::unique_ptr<SyntaxTree>> parseMain();
-  std::optional<std::unique_ptr<SyntaxTree>> parseInner();
+  std::optional<std::unique_ptr<SyntaxTree>> parseMainExpr();
   std::optional<std::unique_ptr<SyntaxTree>>
   parseOpRHS(const int t_minPrec, std::unique_ptr<SyntaxTree> t_leftSide);
   std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
@@ -29,6 +28,7 @@ private:
   std::optional<std::unique_ptr<FunctionAST>> parseDefinition();
   std::optional<std::unique_ptr<PrototypeAST>> parseExtern();
   std::optional<std::unique_ptr<FunctionAST>> parseTopLevel();
+  std::optional<std::unique_ptr<SyntaxTree>> parseInner();
 
 public:
   Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)
