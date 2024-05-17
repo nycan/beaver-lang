@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   }
 
   auto engine = llvm::EngineBuilder(
-    std::make_unique<llvm::Module>(generator->m_module)
+    std::unique_ptr<llvm::Module>(&(generator->m_module))
   )
   .setErrorStr(&error)
   .setOptLevel(llvm::CodeGenOptLevel::Default)

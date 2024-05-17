@@ -27,6 +27,7 @@ llvm_map_components_to_libnames(
   core
   orcjit
   native
+  mcjit
 )
 
 add_executable(testlang
