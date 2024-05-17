@@ -111,10 +111,10 @@ int main(int argc, char **argv) {
   }
 
   engine->finalizeObject();
-  std::function<void()> entryPoint = reinterpret_cast<void(*)()>(
+  std::function<double()> entryPoint = reinterpret_cast<double(*)()>(
     engine->getPointerToNamedFunction("main")
   );
-  entryPoint();
+  std::cout << entryPoint() << '\n';
 
   /*
   llvm::legacy::PassManager pass;

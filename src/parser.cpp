@@ -10,6 +10,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   m_lexer->nextToken();
 
   // parse body
+  std::cout << "Debug\n";
   std::vector<std::unique_ptr<SyntaxTree>> result;
   while (m_lexer->getChar() != '}') {
     if (m_lexer->getChar() == EOF) {
@@ -22,7 +23,9 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
       return {};
     }
     m_lexer->nextToken();
+    std::cout << m_lexer->getLine() << ' ' << m_lexer->getPos() << '\n';
   }
+  std::cout << "Debug end\n";
 
   // parse '}'
   m_lexer->nextToken();
