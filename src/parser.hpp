@@ -6,13 +6,20 @@
 #include <cctype>
 #include <iostream>
 
+// Parsing an outer expression will return one of these 
+// Tells the main function how to continue
 enum class ParserStatus { ok, end, error };
 
+// Uses the lexer to parse the file into an AST
 class Parser {
 private:
+  // Stored lexer
   std::unique_ptr<Lexer> m_lexer;
+
+  // Stores a generator to pass it to code generation
   std::shared_ptr<Generator> m_genData;
 
+  // Parse functions for various parts of the syntax
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> parseBlock();
   std::optional<std::unique_ptr<SyntaxTree>> parseNum();
   std::optional<std::unique_ptr<SyntaxTree>> parseExpression();

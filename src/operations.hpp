@@ -105,6 +105,7 @@ namespace operations {
     }
   };
 
+  // Map of symbols to operations
   const std::map<std::string, Operation> opKeys = {
     {"+", ADD}, {"-", SUB},
     {"*", MULT}, {"/", DIV},
