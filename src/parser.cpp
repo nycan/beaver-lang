@@ -13,6 +13,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   std::cout << "Debug\n";
   std::vector<std::unique_ptr<SyntaxTree>> result;
   while (m_lexer->getChar() != '}') {
+    std::cout << "S " << m_lexer->getLine() << ' ' << m_lexer->getPos() << ' ' << m_lexer->getChar() << '\n';
     if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
       return {};
@@ -22,8 +23,8 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
     } else {
       return {};
     }
+    std::cout << "E " << m_lexer->getLine() << ' ' << m_lexer->getPos() << ' ' << m_lexer->getChar() << '\n';
     m_lexer->nextToken();
-    std::cout << m_lexer->getLine() << ' ' << m_lexer->getPos() << '\n';
   }
   std::cout << "Debug end\n";
 
@@ -169,7 +170,7 @@ Parser::parseOpRHS(const int t_minPrec,
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
-    if (!op.has_value()) {
+    if (!op) {
       return t_leftSide;
     }
     m_lexer->nextToken();
