@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 
-// all tokens
+// Class for all special tokens
 enum class Token {
   unknown,
   endFile,
@@ -19,13 +19,16 @@ enum class Token {
   returnTok
 };
 
+// Responsible for reading the file and parsing into tokens
 class Lexer {
 protected:
   // for error handling
+  // Note: currently somewhat buggy
   unsigned m_lineNumber;
   unsigned m_charPos;
 
-  // way to get the next character depends on input method
+  // Read the next character
+  // Implementation specified in derived class
   virtual char processChar() = 0;
 
 private:
@@ -34,7 +37,7 @@ private:
   double m_numVal;
   std::string m_operation;
 
-  // information
+  // Character information
   Token m_currTok;
   char m_currChar;
   char m_lastChar;
@@ -42,7 +45,7 @@ private:
   // gives the lexer the next character, updates variables
   char nextChar();
 
-  // read the next token
+  // Does the actual processing for tokens
   Token processToken();
 
 public:
@@ -52,20 +55,24 @@ public:
         m_lineNumber(1), m_charPos(1) {}
   virtual ~Lexer() = default;
 
+  // Functions to get stored information
+
   inline std::string getIdentifier() const { return m_identifier; }
   inline double getNum() const { return m_numVal; }
   inline std::string getOperation() const { return m_operation; }
   inline Token getTok() const { return m_currTok; }
   inline char getChar() const { return m_lastChar; }
 
+  // Line and position functions
+
   inline unsigned getLine() const { return m_lineNumber; }
   inline unsigned getPos() const { return m_charPos; }
 
-  // almost the same as processToken(), but also update m_currTok.
+  // Process the next token
   inline Token nextToken() { return m_currTok = processToken(); }
 };
 
-// with input file
+// For reading from files
 class FileLexer : public Lexer {
 private:
   std::ifstream m_fileStream;
@@ -78,7 +85,8 @@ public:
   ~FileLexer() = default;
 };
 
-// read from stdin
+// Read from stdin
+// Currently not used
 class StdinLexer : public Lexer {
 protected:
   inline char processChar() override { return getchar(); }

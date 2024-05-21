@@ -5,13 +5,15 @@ char Lexer::nextChar() {
   m_currChar = processChar();
   if (m_currChar == '\n') {
     ++m_lineNumber;
-    m_charPos = 1;
+    m_charPos = 0;
   } else {
     ++m_charPos;
   }
   return m_currChar;
 }
 
+// Kind of a band-aid function, will probably be replaced later
+// Returns whether a character is a valid operation character
 bool isOperation(char t_character) {
   if (std::isalnum(t_character)) {
     return false;
@@ -43,6 +45,7 @@ Token Lexer::processToken() {
     }
 
     // keywords
+    // will be replaced with a map later
     if (m_identifier == "fn") {
       return Token::func;
     }
@@ -88,7 +91,8 @@ Token Lexer::processToken() {
   if (m_currChar == EOF) {
     return Token::endFile;
   }
-
+  
+  // Operations
   if (!isOperation(m_currChar)) {
     m_operation = "";
     nextChar();
@@ -98,5 +102,7 @@ Token Lexer::processToken() {
   while (isOperation(nextChar())) {
     m_operation += m_currChar;
   }
+
+  // If all else fails, return unknown
   return Token::unknown;
 }
