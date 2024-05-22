@@ -10,10 +10,8 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   m_lexer->nextToken();
 
   // parse body
-  std::cout << "Debug\n";
   std::vector<std::unique_ptr<SyntaxTree>> result;
   while (m_lexer->getChar() != '}') {
-    std::cout << "S " << m_lexer->getLine() << ' ' << m_lexer->getPos() << ' ' << m_lexer->getChar() << '\n';
     if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
       return {};
@@ -23,10 +21,8 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
     } else {
       return {};
     }
-    std::cout << "E " << m_lexer->getLine() << ' ' << m_lexer->getPos() << ' ' << m_lexer->getChar() << '\n';
     m_lexer->nextToken();
   }
-  std::cout << "Debug end\n";
 
   // parse '}'
   m_lexer->nextToken();
@@ -268,7 +264,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseReturn() {
   // parse "ret"
   m_lexer->nextToken();
 
-  if (auto resAST = parseMainExpr()) {
+  if (auto resAST = parseExpression()) {
     return std::make_unique<ReturnAST>(m_genData, std::move(*resAST));
   }
   return {};
