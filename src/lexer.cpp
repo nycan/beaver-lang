@@ -1,17 +1,27 @@
 #include "lexer.hpp"
 
+Token getTokFromKey(std::string t_key) {
+  auto lookup = lexer::TokenKeys.find(t_key);
+  if (lookup == lexer::TokenKeys.end()) {
+    return Token::identifier;
+  }
+  return lookup->second;
+}
+
 char Lexer::nextChar() {
   m_lastChar = m_currChar;
   m_currChar = processChar();
   if (m_currChar == '\n') {
     ++m_lineNumber;
-    m_charPos = 1;
+    m_charPos = 0;
   } else {
     ++m_charPos;
   }
   return m_currChar;
 }
 
+// Kind of a band-aid function, will probably be replaced later
+// Returns whether a character is a valid operation character
 bool isOperation(char t_character) {
   if (std::isalnum(t_character)) {
     return false;
@@ -42,24 +52,7 @@ Token Lexer::processToken() {
       m_identifier += m_currChar;
     }
 
-    // keywords
-    if (m_identifier == "fn") {
-      return Token::func;
-    }
-    if (m_identifier == "extern") {
-      return Token::externTok;
-    }
-    if (m_identifier == "if") {
-      return Token::ifTok;
-    }
-    if (m_identifier == "else") {
-      return Token::elseTok;
-    }
-    if (m_identifier == "ret") {
-      return Token::returnTok;
-    }
-    // if not a keyword, it's an identifier
-    return Token::identifier;
+    return getTokFromKey(m_identifier);
   }
 
   // Numbers
@@ -89,6 +82,7 @@ Token Lexer::processToken() {
     return Token::endFile;
   }
 
+  // Operations
   if (!isOperation(m_currChar)) {
     m_operation = "";
     nextChar();
@@ -98,5 +92,7 @@ Token Lexer::processToken() {
   while (isOperation(nextChar())) {
     m_operation += m_currChar;
   }
+
+  // If all else fails, return unknown
   return Token::unknown;
 }

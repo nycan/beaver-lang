@@ -1,5 +1,7 @@
 #include "generator.hpp"
 
+// Not in header, since there's lots of stuff that needs to be done in the
+// constructor
 Generator::Generator()
     : m_context(), m_module("", m_context), m_builder(m_context),
       m_instrumentations(m_context, true) {

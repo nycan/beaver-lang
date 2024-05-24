@@ -16,7 +16,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
       llvm::errs() << "Expected '}'.";
       return {};
     }
-    if (auto line = parseMain()) {
+    if (auto line = parseInner()) {
       result.push_back(std::move(*line));
     } else {
       return {};
@@ -132,26 +132,28 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
     return parseParens();
   case ';':
     m_lexer->nextToken();
-    return parseMain();
+    return parseMainExpr();
   default:
     llvm::errs() << "Unknown token: " << m_lexer->getChar() << '\n';
     return {};
   }
 }
 
-// main parse function
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMain() {
+// parse one "element" of an expression
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMainExpr() {
   switch (m_lexer->getTok()) {
   case Token::identifier:
     return parseIdentifier();
   case Token::number:
     return parseNum();
   case Token::ifTok:
-    return parseConditional();
+    llvm::errs() << "Unexpected conditional statement in expression.\n";
+    return {};
   case Token::returnTok:
-    return parseReturn();
+    llvm::errs() << "Unexpected return statement in expression.\n";
+    return {};
   case Token::elseTok:
-    llvm::errs() << "Got 'else' with no 'if' to match.\n";
+    llvm::errs() << "Unexpected 'else' in expression\n";
     return {};
   default:
     return handleUnknown();
@@ -164,7 +166,7 @@ Parser::parseOpRHS(const int t_minPrec,
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
-    if (!op.has_value()) {
+    if (!op) {
       return t_leftSide;
     }
     m_lexer->nextToken();
@@ -175,7 +177,7 @@ Parser::parseOpRHS(const int t_minPrec,
     }
 
     // parse right side
-    auto rightSide = parseMain();
+    auto rightSide = parseMainExpr();
     if (!rightSide) {
       return {};
     }
@@ -202,7 +204,7 @@ Parser::parseOpRHS(const int t_minPrec,
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseExpression() {
-  auto leftSide = parseMain();
+  auto leftSide = parseMainExpr();
   if (!leftSide) {
     return {};
   }
@@ -262,7 +264,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseReturn() {
   // parse "ret"
   m_lexer->nextToken();
 
-  if (auto resAST = parseMain()) {
+  if (auto resAST = parseExpression()) {
     return std::make_unique<ReturnAST>(m_genData, std::move(*resAST));
   }
   return {};
@@ -307,57 +309,50 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
   return {};
 }
 
-// temporary main function
-bool Parser::operator()() {
-  m_lexer->nextToken();
-  bool hasErrors = false;
-
-  while (true) {
-    switch (m_lexer->getTok()) {
-    case Token::endFile:
-      return false;
-    case Token::func:
-      if (auto resAST = parseDefinition()) {
-        if (auto resIR = (*resAST)->codegen()) {
-          std::cerr << "Successfully parsed function definition.\n";
-        } else {
-          hasErrors = true;
-        }
-      } else {
-        hasErrors = true;
-        m_lexer->nextToken();
-      }
-      break;
-    case Token::externTok:
-      if (auto resAST = parseExtern()) {
-        if (auto resIR = (*resAST)->codegen()) {
-          std::cerr << "Successfully parsed extern.\n";
-        } else {
-          hasErrors = true;
-        }
-      } else {
-        hasErrors = true;
-        m_lexer->nextToken();
-      }
-      break;
-    default:
-      if (m_lexer->getChar() == ';') {
-        m_lexer->nextToken();
-      } else {
-        if (auto resAST = parseTopLevel()) {
-          if (auto resIR = (*resAST)->codegen()) {
-            std::cerr << "Successfully parsed top-level expression.\n";
-            (*resIR)->removeFromParent();
-          } else {
-            hasErrors = true;
-          }
-        } else {
-          hasErrors = true;
-          m_lexer->nextToken();
-        }
-      }
-      break;
-    }
+// parse inner lines such as conditionals, returns and expressions
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
+  switch (m_lexer->getTok()) {
+  case Token::ifTok:
+    return parseConditional();
+  case Token::returnTok:
+    return parseReturn();
+  case Token::elseTok:
+    llvm::errs() << "Got 'else' with no 'if' to match.\n";
+    return {};
+  default:
+    return parseExpression();
   }
-  return hasErrors;
+}
+
+// parses outer-level expressions such as functions and externs
+ParserStatus Parser::parseOuter() {
+  switch (m_lexer->getTok()) {
+  case Token::endFile: {
+    return ParserStatus::end;
+  }
+  case Token::func: {
+    auto resAST = parseDefinition();
+    if (!resAST) {
+      return ParserStatus::error;
+    }
+    if ((*resAST)->codegen()) {
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
+  }
+  case Token::externTok: {
+    auto resAST = parseExtern();
+    if ((*resAST)->codegen()) {
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
+  }
+  default: {
+    if (m_lexer->getChar() == ';') {
+      m_lexer->nextToken();
+      return ParserStatus::ok;
+    }
+    return ParserStatus::error;
+  }
+  }
 }
