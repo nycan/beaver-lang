@@ -311,7 +311,7 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
 
 // parse inner lines such as conditionals, returns and expressions
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
-  switch(m_lexer->getTok()) {
+  switch (m_lexer->getTok()) {
   case Token::ifTok:
     return parseConditional();
   case Token::returnTok:
@@ -329,7 +329,8 @@ ParserStatus Parser::parseOuter() {
   switch (m_lexer->getTok()) {
   case Token::endFile: {
     return ParserStatus::end;
-  } case Token::func: {
+  }
+  case Token::func: {
     auto resAST = parseDefinition();
     if (!resAST) {
       return ParserStatus::error;
@@ -338,13 +339,15 @@ ParserStatus Parser::parseOuter() {
       return ParserStatus::ok;
     }
     return ParserStatus::error;
-  } case Token::externTok: {
+  }
+  case Token::externTok: {
     auto resAST = parseExtern();
     if ((*resAST)->codegen()) {
       return ParserStatus::ok;
     }
     return ParserStatus::error;
-  } default: {
+  }
+  default: {
     if (m_lexer->getChar() == ';') {
       m_lexer->nextToken();
       return ParserStatus::ok;

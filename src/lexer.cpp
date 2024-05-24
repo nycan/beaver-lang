@@ -81,7 +81,7 @@ Token Lexer::processToken() {
   if (m_currChar == EOF) {
     return Token::endFile;
   }
-  
+
   // Operations
   if (!isOperation(m_currChar)) {
     m_operation = "";

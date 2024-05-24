@@ -1,12 +1,12 @@
 #include "parser.hpp"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/TargetParser/Host.h"
-#include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/MCJIT.h"
 
 // return the index of an flag, if it exists
 size_t findOption(int argc, char **argv, const std::string &option) {
@@ -14,7 +14,7 @@ size_t findOption(int argc, char **argv, const std::string &option) {
     return 0;
   }
   auto result = std::find(argv, argv + argc, option);
-  if (result != argv+argc) {
+  if (result != argv + argc) {
     return result - argv;
   }
   return 0;
@@ -106,34 +106,30 @@ int main(int argc, char **argv) {
   }
 
   // Build the JIT engine
-  auto engine = llvm::EngineBuilder(
-    std::unique_ptr<llvm::Module>(&(generator->m_module))
-  )
-  .setErrorStr(&error)
-  .setOptLevel(llvm::CodeGenOptLevel::Default)
-  .setEngineKind(llvm::EngineKind::JIT)
-  .create();
+  auto engine =
+      llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&(generator->m_module)))
+          .setErrorStr(&error)
+          .setOptLevel(llvm::CodeGenOptLevel::Default)
+          .setEngineKind(llvm::EngineKind::JIT)
+          .create();
 
   if (!engine) {
     llvm::errs() << error << '\n';
     return 1;
   }
-  
+
   // Finalize the engine and call the entry point function
   engine->finalizeObject();
-  std::function<double()> entryPoint = reinterpret_cast<double(*)()>(
-    engine->getPointerToNamedFunction("main")
-  );
+  std::function<double()> entryPoint =
+      reinterpret_cast<double (*)()>(engine->getPointerToNamedFunction("main"));
   std::cout << entryPoint() << '\n';
 
   /*
-  All this code is not used right now, since a JIT is being used in place of a static compiler
-  llvm::legacy::PassManager pass;
-  llvm::CodeGenFileType outputType;
-  if (findOption(argc, argv, "-S")) {
-    outputType = llvm::CodeGenFileType::AssemblyFile;
-  } else {
-    outputType = llvm::CodeGenFileType::ObjectFile;
+  All this code is not used right now, since a JIT is being used in place of a
+  static compiler llvm::legacy::PassManager pass; llvm::CodeGenFileType
+  outputType; if (findOption(argc, argv, "-S")) { outputType =
+  llvm::CodeGenFileType::AssemblyFile; } else { outputType =
+  llvm::CodeGenFileType::ObjectFile;
   }
 
   if (targetMachine->addPassesToEmitFile(pass, outputStream, nullptr,

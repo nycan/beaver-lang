@@ -17,7 +17,8 @@
 #include <memory>
 
 // Generator class
-// Everything related to creating the module is in this class, including optimizations
+// Everything related to creating the module is in this class, including
+// optimizations
 struct Generator {
   // stuff for generation
   llvm::LLVMContext m_context;

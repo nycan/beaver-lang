@@ -6,7 +6,7 @@
 #include <cctype>
 #include <iostream>
 
-// Parsing an outer expression will return one of these 
+// Parsing an outer expression will return one of these
 // Tells the main function how to continue
 enum class ParserStatus { ok, end, error };
 

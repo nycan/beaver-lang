@@ -4,8 +4,8 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
 
 // Class for all special tokens
 enum class Token {
@@ -21,14 +21,12 @@ enum class Token {
 };
 
 namespace lexer {
-   // conversion from strings to tokens
-  const std::map<std::string,Token> TokenKeys = {
-    {"fn", Token::func},
-    {"extern", Token::externTok},
-    {"if", Token::ifTok},
-    {"else", Token::elseTok},
-    {"ret", Token::returnTok}
-  };
+// conversion from strings to tokens
+const std::map<std::string, Token> TokenKeys = {{"fn", Token::func},
+                                                {"extern", Token::externTok},
+                                                {"if", Token::ifTok},
+                                                {"else", Token::elseTok},
+                                                {"ret", Token::returnTok}};
 } // namespace lexer
 
 // returns the token if one is found, and Token::identifier otherwise
