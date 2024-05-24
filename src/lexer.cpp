@@ -1,5 +1,13 @@
 #include "lexer.hpp"
 
+Token getTokFromKey(std::string t_key) {
+  auto lookup = lexer::TokenKeys.find(t_key);
+  if (lookup == lexer::TokenKeys.end()) {
+    return Token::identifier;
+  }
+  return lookup->second;
+}
+
 char Lexer::nextChar() {
   m_lastChar = m_currChar;
   m_currChar = processChar();
@@ -44,25 +52,7 @@ Token Lexer::processToken() {
       m_identifier += m_currChar;
     }
 
-    // keywords
-    // will be replaced with a map later
-    if (m_identifier == "fn") {
-      return Token::func;
-    }
-    if (m_identifier == "extern") {
-      return Token::externTok;
-    }
-    if (m_identifier == "if") {
-      return Token::ifTok;
-    }
-    if (m_identifier == "else") {
-      return Token::elseTok;
-    }
-    if (m_identifier == "ret") {
-      return Token::returnTok;
-    }
-    // if not a keyword, it's an identifier
-    return Token::identifier;
+    return getTokFromKey(m_identifier);
   }
 
   // Numbers

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <map>
 
 // Class for all special tokens
 enum class Token {
@@ -18,6 +19,20 @@ enum class Token {
   elseTok,
   returnTok
 };
+
+namespace lexer {
+   // conversion from strings to tokens
+  const std::map<std::string,Token> TokenKeys = {
+    {"fn", Token::func},
+    {"extern", Token::externTok},
+    {"if", Token::ifTok},
+    {"else", Token::elseTok},
+    {"ret", Token::returnTok}
+  };
+} // namespace lexer
+
+// returns the token if one is found, and Token::identifier otherwise
+Token getTokFromKey(std::string t_key);
 
 // Responsible for reading the file and parsing into tokens
 class Lexer {
