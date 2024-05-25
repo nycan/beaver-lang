@@ -63,8 +63,9 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
   // compare to 0
   llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-      *conditionCode,
-      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+    *conditionCode,
+    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
+  );
 
   // create blocks
   llvm::Function *functionCode =
@@ -86,7 +87,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
       return {};
     }
 
-    // if block is returns, then don't worry processing the rest
+    // only one terminator is allowed
     if (line->terminatesBlock()) {
       mainTerminated = true;
       break;
@@ -139,6 +140,60 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
   // placeholder. the structure will be changed in next PR
   return mergedBB;
+}
+
+std::optional<llvm::Value *> WhileAST::codegen() {
+  // condition
+  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  if (!conditionCode) {
+    return {};
+  }
+
+  // compare to 0
+  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
+    *conditionCode,
+    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
+  );
+  
+  // create blocks
+  llvm::Function *functionCode =
+      m_generator->m_builder.GetInsertBlock()->getParent();
+  llvm::BasicBlock *blockBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+  llvm::BasicBlock *afterBB = llvm::BasicBlock::Create(m_generator->m_context);
+
+  // create the conditional branch
+  m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+
+  m_generator->m_builder.SetInsertPoint(blockBB);
+  
+  bool terminated = false;
+  for (auto &line : m_block) {
+    std::optional<llvm::Value *> lineCode = line->codegen();
+    if (!lineCode) {
+      return {};
+    }
+
+    // can only have one terminator
+    if (line->terminatesBlock()) {
+      terminated = true;
+      break;
+    }
+  }
+
+  // after it's finished, check whether to go back or go on
+  if (!terminated) {
+    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+  }
+
+  blockBB = m_generator->m_builder.GetInsertBlock();
+
+  if (!terminated) {
+    functionCode->insert(functionCode->end(), afterBB);
+    m_generator->m_builder.SetInsertPoint(afterBB);
+  }
+
+  return afterBB;
 }
 
 std::optional<llvm::Function *> PrototypeAST::codegen() {

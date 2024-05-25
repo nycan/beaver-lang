@@ -101,6 +101,22 @@ public:
   std::optional<llvm::Value *> codegen() override;
 };
 
+class WhileAST : public SyntaxTree {
+private:
+  std::unique_ptr<SyntaxTree> m_condition;
+  std::vector<std::unique_ptr<SyntaxTree>> m_block;
+public:
+  WhileAST(
+    std::shared_ptr<Generator> t_generator,
+    std::unique_ptr<SyntaxTree> t_condition,
+    std::vector<std::unique_ptr<SyntaxTree>> t_block
+  ): SyntaxTree(t_generator), m_condition(std::move(t_condition)),
+     m_block(std::move(t_block)) {}
+  ~WhileAST() = default;
+
+  std::optional<llvm::Value *> codegen() override;
+};
+
 class PrototypeAST {
 private:
   std::shared_ptr<Generator> m_generator;

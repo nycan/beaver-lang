@@ -124,6 +124,26 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
                                           std::move(elseBlock));
 }
 
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseWhile() {
+  // parse 'while'
+  m_lexer->nextToken();
+
+  // parse condition
+  auto condition = parseExpression();
+  if (!condition) {
+    return {};
+  }
+
+  // parse block
+  auto block = parseBlock();
+  if (!block) {
+    return {};
+  }
+
+  return std::make_unique<WhileAST>(m_genData, std::move(*condition),
+                                          std::move(*block));
+}
+
 // helper function for parseMain to parse the last character when the token is
 // unknown
 std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {

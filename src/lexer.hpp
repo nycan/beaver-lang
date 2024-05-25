@@ -17,7 +17,8 @@ enum class Token {
   number,
   ifTok,
   elseTok,
-  returnTok
+  returnTok,
+  whileTok
 };
 
 namespace lexer {
@@ -26,7 +27,8 @@ const std::map<std::string, Token> TokenKeys = {{"fn", Token::func},
                                                 {"extern", Token::externTok},
                                                 {"if", Token::ifTok},
                                                 {"else", Token::elseTok},
-                                                {"ret", Token::returnTok}};
+                                                {"ret", Token::returnTok},
+                                                {"while", Token::whileTok}};
 } // namespace lexer
 
 // returns the token if one is found, and Token::identifier otherwise
