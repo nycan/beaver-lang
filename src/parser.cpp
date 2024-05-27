@@ -336,6 +336,8 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
     return parseConditional();
   case Token::returnTok:
     return parseReturn();
+  case Token::whileTok:
+    return parseWhile();
   case Token::elseTok:
     llvm::errs() << "Got 'else' with no 'if' to match.\n";
     return {};
