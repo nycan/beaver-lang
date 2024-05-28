@@ -128,10 +128,9 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   // in case insert point was changed during code generation
   elseBB = m_generator->m_builder.GetInsertBlock();
   // create merged block
-  if (!elseTerminated || !mainTerminated) {
-    functionCode->insert(functionCode->end(), mergedBB);
-    m_generator->m_builder.SetInsertPoint(mergedBB);
-  }
+  // Todo: finish processing if block is terminated
+  functionCode->insert(functionCode->end(), mergedBB);
+  m_generator->m_builder.SetInsertPoint(mergedBB);
   // llvm::PHINode *phiNode = m_generator->m_builder.CreatePHI(
   //     llvm::Type::getDoubleTy(m_generator->m_context), 2);
   // phiNode->addIncoming(mainCode, mainBB);
@@ -188,10 +187,9 @@ std::optional<llvm::Value *> WhileAST::codegen() {
 
   blockBB = m_generator->m_builder.GetInsertBlock();
 
-  if (!terminated) {
-    functionCode->insert(functionCode->end(), afterBB);
-    m_generator->m_builder.SetInsertPoint(afterBB);
-  }
+  // Todo: just terminate processing if the block is terminated
+  functionCode->insert(functionCode->end(), afterBB);
+  m_generator->m_builder.SetInsertPoint(afterBB);
 
   return afterBB;
 }
