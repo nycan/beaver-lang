@@ -1,5 +1,5 @@
-#ifndef TESTLANG_PARSER_HPP
-#define TESTLANG_PARSER_HPP
+#ifndef BEAVER_PARSER_HPP
+#define BEAVER_PARSER_HPP
 
 #include "lexer.hpp"
 #include "syntaxtree.hpp"
@@ -48,4 +48,4 @@ public:
   ParserStatus parseOuter();
 };
 
-#endif // TESTLANG_PARSER_HPP
+#endif // BEAVER_PARSER_HPP

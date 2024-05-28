@@ -1,5 +1,5 @@
-#ifndef TESTLANG_OPERATIONS_HPP
-#define TESTLANG_OPERATIONS_HPP
+#ifndef BEAVER_OPERATIONS_HPP
+#define BEAVER_OPERATIONS_HPP
 
 #include "generator.hpp"
 #include "llvm/IR/IRBuilder.h"
@@ -92,4 +92,4 @@ const std::map<std::string, Operation> opKeys = {
 // find operation given text
 std::optional<Operation> getOpFromKey(std::string t_key);
 
-#endif // TESTLANG_OPERATIONS_HPP
+#endif // BEAVER_OPERATIONS_HPP

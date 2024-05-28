@@ -1,5 +1,6 @@
-#ifndef TESTLANG_JIT_HPP
-#define TESTLANG_JIT_HPP
+#ifndef BEAVER_JIT_HPP
+#define BEAVER_JIT_HPP
+// Note: this file is currently not used
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
@@ -13,7 +14,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include <memory>
 
-class TestlangJIT {
+class BeaverJIT {
 private:
   llvm::orc::ExecutionSession m_execSession;
   llvm::orc::RTDyldObjectLinkingLayer m_objLayer;
@@ -24,7 +25,7 @@ private:
   llvm::orc::ThreadSafeContext m_context;
 
 public:
-  TestlangJIT(llvm::orc::JITTargetMachineBuilder t_jtmb,
+  BeaverJIT(llvm::orc::JITTargetMachineBuilder t_jtmb,
               llvm::DataLayout t_layout)
       : m_execSession(std::make_unique<llvm::orc::ExecutorProcessControl>()),
         m_objLayer(
@@ -37,4 +38,4 @@ public:
         m_context(std::make_unique<llvm::LLVMContext>()) {}
 };
 
-#endif // TESTLANG_JIT_HPP
+#endif // BEAVER_JIT_HPP

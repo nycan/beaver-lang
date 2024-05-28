@@ -1,5 +1,5 @@
-#ifndef TESTLANG_LEXER_HPP
-#define TESTLANG_LEXER_HPP
+#ifndef BEAVER_LEXER_HPP
+#define BEAVER_LEXER_HPP
 
 #include <cctype>
 #include <fstream>
@@ -111,4 +111,4 @@ public:
   ~StdinLexer() = default;
 };
 
-#endif // TESTLANG_LEXER_HPP
+#endif // BEAVER_LEXER_HPP

@@ -1,5 +1,5 @@
-#ifndef TESTLANG_SYNTAXTREE_HPP
-#define TESTLANG_SYNTAXTREE_HPP
+#ifndef BEAVER_SYNTAXTREE_HPP
+#define BEAVER_SYNTAXTREE_HPP
 
 #include "generator.hpp"
 #include "operations.hpp"
@@ -166,4 +166,4 @@ public:
   std::optional<llvm::Function *> codegen();
 };
 
-#endif // TESTLANG_SYNTAXTREE_HPP
+#endif // BEAVER_SYNTAXTREE_HPP
