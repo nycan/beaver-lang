@@ -248,7 +248,9 @@ std::optional<llvm::Value *> ForAST::codegen() {
       return {};
     }
 
-    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+    if (!m_updation->terminatesBlock()) {
+      m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+    }
   }
 
   blockBB = m_generator->m_builder.GetInsertBlock();
@@ -329,8 +331,7 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
   }
 
   // verify the generated code
-  if (llvm::verifyFunction(**funcCode)) {
-    llvm::errs() << "Errors found in code generation.\n";
+  if (llvm::verifyFunction(**funcCode, &llvm::errs())) {
     return {};
   }
 
