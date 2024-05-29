@@ -160,6 +160,13 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
     return {};
   }
 
+  if (m_lexer->getChar() != ';') {
+    llvm::errs() << "Expected ';' in for loop.\n";
+    return {};
+  }
+  // eat semicolon
+  m_lexer->nextToken();
+
   // parse updation
   auto updation = parseInner();
   if (!updation) {
