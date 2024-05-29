@@ -144,6 +144,41 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseWhile() {
                                           std::move(*block));
 }
 
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
+  // parse 'for'
+  m_lexer->nextToken();
+
+  // parse initialization
+  auto initialization = parseInner();
+  if (!initialization) {
+    return {};
+  }
+
+  // parse condition
+  auto condition = parseExpression();
+  if (!condition) {
+    return {};
+  }
+
+  // parse updation
+  auto updation = parseInner();
+  if (!updation) {
+    return {};
+  }
+
+  // parse block
+  auto block = parseBlock();
+  if (!block) {
+    return {};
+  }
+
+  return std::make_unique<ForAST>(
+    m_genData,
+    std::move(*initialization), std::move(*condition), std::move(*updation),
+    std::move(*block)
+  );
+}
+
 // helper function for parseMain to parse the last character when the token is
 // unknown
 std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
@@ -338,6 +373,8 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
     return parseReturn();
   case Token::whileTok:
     return parseWhile();
+  case Token::forTok:
+    return parseFor();
   case Token::elseTok:
     llvm::errs() << "Got 'else' with no 'if' to match.\n";
     return {};

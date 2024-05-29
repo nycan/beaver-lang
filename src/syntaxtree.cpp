@@ -195,6 +195,71 @@ std::optional<llvm::Value *> WhileAST::codegen() {
   return afterBB;
 }
 
+std::optional<llvm::Value *> ForAST::codegen() {
+  // intialization
+  std::optional<llvm::Value *> initializationCode = m_initialization->codegen();
+  if (!initializationCode) {
+    return {};
+  }
+
+  // condition
+  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  if (!conditionCode) {
+    return {};
+  }
+
+  // compare to 0
+  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
+    *conditionCode,
+    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
+  );
+  
+  // create blocks
+  llvm::Function *functionCode =
+      m_generator->m_builder.GetInsertBlock()->getParent();
+  llvm::BasicBlock *blockBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+  llvm::BasicBlock *afterBB = llvm::BasicBlock::Create(m_generator->m_context);
+
+  // create the conditional branch
+  m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+
+  m_generator->m_builder.SetInsertPoint(blockBB);
+  
+  bool terminated = false;
+  for (auto &line : m_block) {
+    std::optional<llvm::Value *> lineCode = line->codegen();
+    if (!lineCode) {
+      return {};
+    }
+
+    // can only have one terminator
+    if (line->terminatesBlock()) {
+      terminated = true;
+      break;
+    }
+  }
+
+  // after it's finished, check whether to go back or go on
+  if (!terminated) {
+    //updation
+    std::optional<llvm::Value *> updationCode = m_updation->codegen();
+    if (!updationCode) {
+      return {};
+    }
+
+    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+  }
+
+  blockBB = m_generator->m_builder.GetInsertBlock();
+
+  // Todo: just terminate processing if the block is terminated
+  functionCode->insert(functionCode->end(), afterBB);
+  m_generator->m_builder.SetInsertPoint(afterBB);
+
+  return afterBB;
+}
+
 std::optional<llvm::Function *> PrototypeAST::codegen() {
   // all doubles for now
   std::vector<llvm::Type *> tmpType(

@@ -27,6 +27,7 @@ private:
   std::optional<std::unique_ptr<SyntaxTree>> parseIdentifier();
   std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
   std::optional<std::unique_ptr<SyntaxTree>> parseWhile();
+  std::optional<std::unique_ptr<SyntaxTree>> parseFor();
   std::optional<std::unique_ptr<SyntaxTree>> handleUnknown();
   std::optional<std::unique_ptr<SyntaxTree>> parseMainExpr();
   std::optional<std::unique_ptr<SyntaxTree>>
