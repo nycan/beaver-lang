@@ -56,7 +56,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   // then assigns the correct branching
 
   // condition
-  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  std::optional<llvm::Value *> conditionCode = m_conditions[0]->codegen();
   if (!conditionCode) {
     return {};
   }
@@ -81,7 +81,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   m_generator->m_builder.SetInsertPoint(mainBB);
 
   bool mainTerminated = false;
-  for (auto &line : m_mainBlock) {
+  for (auto &line : m_mainBlocks[0]) {
     std::optional<llvm::Value *> mainCode = line->codegen();
     if (!mainCode) {
       return {};

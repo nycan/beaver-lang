@@ -83,18 +83,18 @@ public:
 // if/else
 class ConditionalAST : public SyntaxTree {
 private:
-  std::unique_ptr<SyntaxTree> m_condition;
-  std::vector<std::unique_ptr<SyntaxTree>> m_mainBlock;
+  std::vector<std::unique_ptr<SyntaxTree>> m_conditions;
+  std::vector<std::vector<std::unique_ptr<SyntaxTree>>> m_mainBlocks;
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> m_elseBlock;
 
 public:
   ConditionalAST(
       std::shared_ptr<Generator> t_generator,
-      std::unique_ptr<SyntaxTree> t_condition,
-      std::vector<std::unique_ptr<SyntaxTree>> t_mainBlock,
+      std::vector<std::unique_ptr<SyntaxTree>> t_conditions,
+      std::vector<std::vector<std::unique_ptr<SyntaxTree>>> t_mainBlocks,
       std::optional<std::vector<std::unique_ptr<SyntaxTree>>> t_elseBlock)
-      : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
-        m_mainBlock(std::move(t_mainBlock)),
+      : SyntaxTree(t_generator), m_conditions(std::move(t_conditions)),
+        m_mainBlocks(std::move(t_mainBlocks)),
         m_elseBlock(std::move(t_elseBlock)) {}
   ~ConditionalAST() = default;
 

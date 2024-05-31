@@ -91,20 +91,38 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
   return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
-  // parse 'if'
-  m_lexer->nextToken();
-
-  // parse condition
+bool Parser::parseConditionalBlock(
+  std::vector<std::vector<std::unique_ptr<SyntaxTree>>>& mainBlocks,
+  std::vector<std::unique_ptr<SyntaxTree>>& conditions
+) {
   auto condition = parseExpression();
   if (!condition) {
-    return {};
+    return 1;
   }
+  conditions.push_back(std::move(*condition));
 
   // parse main block
   auto mainBlock = parseBlock();
   if (!mainBlock) {
-    return {};
+    return 1;
+  }
+  mainBlocks.push_back(std::move(*mainBlock));
+}
+
+std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
+  // parse 'if'
+  m_lexer->nextToken();
+
+  std::vector<std::vector<std::unique_ptr<SyntaxTree>>> mainBlocks;
+  std::vector<std::unique_ptr<SyntaxTree>> conditions;
+
+  parseConditionalBlock(mainBlocks, conditions);
+
+  while (m_lexer->getTok() == Token::elifTok) {
+    // parse "elif"
+    m_lexer->nextToken();
+
+    parseConditionalBlock(mainBlocks, conditions);
   }
 
   // if an else block exists, parse it
@@ -119,8 +137,8 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
     }
   }
 
-  return std::make_unique<ConditionalAST>(m_genData, std::move(*condition),
-                                          std::move(*mainBlock),
+  return std::make_unique<ConditionalAST>(m_genData, std::move(conditions),
+                                          std::move(mainBlocks),
                                           std::move(elseBlock));
 }
 
@@ -382,6 +400,8 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
     return parseWhile();
   case Token::forTok:
     return parseFor();
+  case Token::elifTok:
+    llvm::errs() << "Got 'elif' with no 'if' to match.\n";
   case Token::elseTok:
     llvm::errs() << "Got 'else' with no 'if' to match.\n";
     return {};
