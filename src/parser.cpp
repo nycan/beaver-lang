@@ -107,6 +107,7 @@ bool Parser::parseConditionalBlock(
     return 1;
   }
   mainBlocks.push_back(std::move(*mainBlock));
+  return 0;
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
@@ -122,7 +123,9 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
     // parse "elif"
     m_lexer->nextToken();
 
-    parseConditionalBlock(mainBlocks, conditions);
+    if (parseConditionalBlock(mainBlocks, conditions)){
+      return {};
+    }
   }
 
   // if an else block exists, parse it
