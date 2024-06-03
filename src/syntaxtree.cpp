@@ -82,8 +82,8 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     llvm::BasicBlock *codeBB = llvm::BasicBlock::Create(m_generator->m_context);
 
     // create the conditional branch
+    functionCode->insert(functionCode->end(), codeBB);
     m_generator->m_builder.CreateCondBr(comparisonCode, codeBB, nextBB);
-
     m_generator->m_builder.SetInsertPoint(codeBB);
 
     bool currTerminated = false;
@@ -106,9 +106,11 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
       m_generator->m_builder.CreateBr(mergedBB);
     }
     
-    functionCode->insert(functionCode->end(), codeBB);
     checkBB = nextBB;
+    nextBB = llvm::BasicBlock::Create(m_generator->m_context);
+    
     functionCode->insert(functionCode->end(), checkBB);
+    m_generator->m_builder.SetInsertPoint(checkBB);
   }
 
   // checkBB is now the else block
@@ -331,6 +333,8 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
     }
   }
 
+  (*funcCode)->print(llvm::errs());
+
   // verify the generated code
   if (llvm::verifyFunction(**funcCode, &llvm::errs())) {
     return {};
@@ -340,5 +344,6 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
 
   // run optimizations
   m_generator->m_funcPass.run(**funcCode, m_generator->m_funcAnalyzer);
+
   return funcCode;
 }
