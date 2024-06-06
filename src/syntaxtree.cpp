@@ -55,7 +55,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
-
+  
   llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(
     m_generator->m_context, "", functionCode
   );
@@ -113,13 +113,15 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     }
     
     checkBB = nextBB;
-    nextBB = llvm::BasicBlock::Create(m_generator->m_context);
     
-    functionCode->insert(functionCode->end(), nextBB);
+    // I feel like there's a better way to do this...
+    if (i < numBlocks-1) {
+      nextBB = llvm::BasicBlock::Create(m_generator->m_context);
+      functionCode->insert(functionCode->end(), nextBB);
+    }
+
     m_generator->m_builder.SetInsertPoint(checkBB);
   }
-
-  functionCode->print(llvm::errs());
 
   // checkBB is now the else block
 
