@@ -59,12 +59,13 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(
     m_generator->m_context, "", functionCode
   );
-  functionCode->insert(functionCode->end(), mergedBB);
+  //functionCode->insert(functionCode->end(), mergedBB);
   llvm::BasicBlock *checkBB = m_generator->m_builder.GetInsertBlock();
   llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
     m_generator->m_context, "", functionCode
   );
-  functionCode->insert(functionCode->end(), nextBB);
+  //functionCode->insert(functionCode->end(), nextBB);
+  functionCode->print(llvm::errs());
 
   unsigned numBlocks = m_conditions.size();
   bool allTerminated = true;
@@ -86,9 +87,9 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     llvm::BasicBlock *codeBB = llvm::BasicBlock::Create(
       m_generator->m_context, "", functionCode
     );
-    functionCode->insert(functionCode->end(), codeBB);
 
     // create the conditional branch
+    //functionCode->insert(functionCode->end(), codeBB);
     m_generator->m_builder.CreateCondBr(comparisonCode, codeBB, nextBB);
     m_generator->m_builder.SetInsertPoint(codeBB);
 
@@ -117,11 +118,13 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     // I feel like there's a better way to do this...
     if (i < numBlocks-1) {
       nextBB = llvm::BasicBlock::Create(m_generator->m_context);
-      functionCode->insert(functionCode->end(), nextBB);
     }
 
+    //functionCode->insert(functionCode->end(), checkBB);
     m_generator->m_builder.SetInsertPoint(checkBB);
   }
+
+  functionCode->print(llvm::errs());
 
   // checkBB is now the else block
 
@@ -148,7 +151,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
   // create merged block
   if(!allTerminated || !elseTerminated) {
-    functionCode->insert(functionCode->end(), mergedBB);
+    //functionCode->insert(functionCode->end(), mergedBB);
     m_generator->m_builder.SetInsertPoint(mergedBB);
   }
   // placeholder. the structure will be changed soon
