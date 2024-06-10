@@ -8,8 +8,8 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
 set(LLVM_DIR /usr/local/Cellar/llvm/18.1.4/lib/cmake/llvm)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
-project(testlang VERSION 0.1
-                 DESCRIPTION "compiler testing"
+project(beaverlang VERSION 0.1
+                 DESCRIPTION "beaver"
                  LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -30,7 +30,7 @@ llvm_map_components_to_libnames(
   mcjit
 )
 
-add_executable(testlang
+add_executable(beaver
   src/main.cpp
   src/lexer.cpp
   src/parser.cpp
@@ -39,4 +39,4 @@ add_executable(testlang
   src/generator.cpp
   # src/jit.cpp
 )
-target_link_libraries(testlang ${llvm_libs} ${targets})
+target_link_libraries(beaver ${llvm_libs} ${targets})

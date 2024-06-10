@@ -52,56 +52,71 @@ std::optional<llvm::Value *> CallAST::codegen() {
 };
 
 std::optional<llvm::Value *> ConditionalAST::codegen() {
-  // creates main block, else block, and merge block
-  // then assigns the correct branching
-
-  // condition
-  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
-  if (!conditionCode) {
-    return {};
-  }
-
-  // compare to 0
-  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-      *conditionCode,
-      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
-
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
-  llvm::BasicBlock *mainBB =
+
+  llvm::BasicBlock *mergedBB =
       llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
-  llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(m_generator->m_context);
-  llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(m_generator->m_context);
+  llvm::BasicBlock *checkBB = m_generator->m_builder.GetInsertBlock();
+  llvm::BasicBlock *nextBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
 
-  // create the conditional branch
-  m_generator->m_builder.CreateCondBr(comparisonCode, mainBB, elseBB);
+  unsigned numBlocks = m_conditions.size();
+  bool allTerminated = true;
 
-  m_generator->m_builder.SetInsertPoint(mainBB);
-
-  bool mainTerminated = false;
-  for (auto &line : m_mainBlock) {
-    std::optional<llvm::Value *> mainCode = line->codegen();
-    if (!mainCode) {
+  for (unsigned i = 0; i < numBlocks; ++i) {
+    // condition
+    std::optional<llvm::Value *> conditionCode = m_conditions[i]->codegen();
+    if (!conditionCode) {
       return {};
     }
 
-    // if block is returns, then don't worry processing the rest
-    if (line->terminatesBlock()) {
-      mainTerminated = true;
-      break;
+    // compare to 0
+    llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
+        *conditionCode,
+        llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+
+    // create the block with the code
+    llvm::BasicBlock *codeBB =
+        llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+
+    // create the conditional branch
+    m_generator->m_builder.CreateCondBr(comparisonCode, codeBB, nextBB);
+    m_generator->m_builder.SetInsertPoint(codeBB);
+
+    bool currTerminated = false;
+    for (auto &line : m_mainBlocks[i]) {
+      std::optional<llvm::Value *> mainCode = line->codegen();
+      if (!mainCode) {
+        return {};
+      }
+
+      // only one terminator is allowed
+      if (line->terminatesBlock()) {
+        currTerminated = true;
+        break;
+      }
     }
+
+    // after it's finished, go to the merged block
+    if (!currTerminated) {
+      allTerminated = false;
+      m_generator->m_builder.CreateBr(mergedBB);
+    }
+
+    checkBB = nextBB;
+
+    // I feel like there's a better way to do this...
+    if (i < numBlocks - 1) {
+      nextBB =
+          llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+    }
+
+    m_generator->m_builder.SetInsertPoint(checkBB);
   }
 
-  // after it's finished, go to the merged block
-  if (!mainTerminated) {
-    m_generator->m_builder.CreateBr(mergedBB);
-  }
-  mainBB = m_generator->m_builder.GetInsertBlock();
-
-  // create branch and assign to else block
-  functionCode->insert(functionCode->end(), elseBB);
-  m_generator->m_builder.SetInsertPoint(elseBB);
+  // checkBB is now the else block
 
   // generate code for the else block
   bool elseTerminated = false;
@@ -119,26 +134,135 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     }
   }
 
-  // go back to merged blcok
+  // go back to merged block
   if (!elseTerminated) {
     m_generator->m_builder.CreateBr(mergedBB);
   }
 
-  // in case insert point was changed during code generation
-  elseBB = m_generator->m_builder.GetInsertBlock();
   // create merged block
-  if (!elseTerminated || !mainTerminated) {
-    functionCode->insert(functionCode->end(), mergedBB);
+  if (!allTerminated || !elseTerminated) {
     m_generator->m_builder.SetInsertPoint(mergedBB);
+  } else {
+    llvm::DeleteDeadBlock(mergedBB);
   }
-  // llvm::PHINode *phiNode = m_generator->m_builder.CreatePHI(
-  //     llvm::Type::getDoubleTy(m_generator->m_context), 2);
-  // phiNode->addIncoming(mainCode, mainBB);
-  // phiNode->addIncoming(elseCode, elseBB);
-  // return phiNode;
-
-  // placeholder. the structure will be changed in next PR
+  // placeholder. the structure will be changed soon
   return mergedBB;
+}
+
+std::optional<llvm::Value *> WhileAST::codegen() {
+  // condition
+  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  if (!conditionCode) {
+    return {};
+  }
+
+  // compare to 0
+  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
+      *conditionCode,
+      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+
+  // create blocks
+  llvm::Function *functionCode =
+      m_generator->m_builder.GetInsertBlock()->getParent();
+  llvm::BasicBlock *blockBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+  llvm::BasicBlock *afterBB = llvm::BasicBlock::Create(m_generator->m_context);
+
+  // create the conditional branch
+  m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+
+  m_generator->m_builder.SetInsertPoint(blockBB);
+
+  bool terminated = false;
+  for (auto &line : m_block) {
+    std::optional<llvm::Value *> lineCode = line->codegen();
+    if (!lineCode) {
+      return {};
+    }
+
+    // can only have one terminator
+    if (line->terminatesBlock()) {
+      terminated = true;
+      break;
+    }
+  }
+
+  // after it's finished, check whether to go back or go on
+  if (!terminated) {
+    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+  }
+
+  blockBB = m_generator->m_builder.GetInsertBlock();
+
+  // Todo: just terminate processing if the block is terminated
+  m_generator->m_builder.SetInsertPoint(afterBB);
+
+  return afterBB;
+}
+
+std::optional<llvm::Value *> ForAST::codegen() {
+  // intialization
+  std::optional<llvm::Value *> initializationCode = m_initialization->codegen();
+  if (!initializationCode) {
+    return {};
+  }
+
+  // condition
+  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  if (!conditionCode) {
+    return {};
+  }
+
+  // compare to 0
+  llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
+      *conditionCode,
+      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+
+  // create blocks
+  llvm::Function *functionCode =
+      m_generator->m_builder.GetInsertBlock()->getParent();
+  llvm::BasicBlock *blockBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
+  llvm::BasicBlock *afterBB = llvm::BasicBlock::Create(m_generator->m_context);
+
+  // create the conditional branch
+  m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+
+  m_generator->m_builder.SetInsertPoint(blockBB);
+
+  bool terminated = false;
+  for (auto &line : m_block) {
+    std::optional<llvm::Value *> lineCode = line->codegen();
+    if (!lineCode) {
+      return {};
+    }
+
+    // can only have one terminator
+    if (line->terminatesBlock()) {
+      terminated = true;
+      break;
+    }
+  }
+
+  // after it's finished, check whether to go back or go on
+  if (!terminated) {
+    // updation
+    std::optional<llvm::Value *> updationCode = m_updation->codegen();
+    if (!updationCode) {
+      return {};
+    }
+
+    if (!m_updation->terminatesBlock()) {
+      m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+    }
+  }
+
+  blockBB = m_generator->m_builder.GetInsertBlock();
+
+  // Todo: just terminate processing if the block is terminated
+  m_generator->m_builder.SetInsertPoint(afterBB);
+
+  return afterBB;
 }
 
 std::optional<llvm::Function *> PrototypeAST::codegen() {
@@ -210,8 +334,7 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
   }
 
   // verify the generated code
-  if (llvm::verifyFunction(**funcCode)) {
-    llvm::errs() << "Errors found in code generation.\n";
+  if (llvm::verifyFunction(**funcCode, &llvm::errs())) {
     return {};
   }
 
@@ -219,5 +342,6 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
 
   // run optimizations
   m_generator->m_funcPass.run(**funcCode, m_generator->m_funcAnalyzer);
+
   return funcCode;
 }

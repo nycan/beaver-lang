@@ -1,5 +1,5 @@
-#ifndef TESTLANG_SYNTAXTREE_HPP
-#define TESTLANG_SYNTAXTREE_HPP
+#ifndef BEAVER_SYNTAXTREE_HPP
+#define BEAVER_SYNTAXTREE_HPP
 
 #include "generator.hpp"
 #include "operations.hpp"
@@ -11,6 +11,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <iostream>
 #include <map>
 #include <memory>
@@ -83,20 +84,57 @@ public:
 // if/else
 class ConditionalAST : public SyntaxTree {
 private:
-  std::unique_ptr<SyntaxTree> m_condition;
-  std::vector<std::unique_ptr<SyntaxTree>> m_mainBlock;
+  std::vector<std::unique_ptr<SyntaxTree>> m_conditions;
+  std::vector<std::vector<std::unique_ptr<SyntaxTree>>> m_mainBlocks;
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> m_elseBlock;
 
 public:
   ConditionalAST(
       std::shared_ptr<Generator> t_generator,
-      std::unique_ptr<SyntaxTree> t_condition,
-      std::vector<std::unique_ptr<SyntaxTree>> t_mainBlock,
+      std::vector<std::unique_ptr<SyntaxTree>> t_conditions,
+      std::vector<std::vector<std::unique_ptr<SyntaxTree>>> t_mainBlocks,
       std::optional<std::vector<std::unique_ptr<SyntaxTree>>> t_elseBlock)
-      : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
-        m_mainBlock(std::move(t_mainBlock)),
+      : SyntaxTree(t_generator), m_conditions(std::move(t_conditions)),
+        m_mainBlocks(std::move(t_mainBlocks)),
         m_elseBlock(std::move(t_elseBlock)) {}
   ~ConditionalAST() = default;
+
+  std::optional<llvm::Value *> codegen() override;
+};
+
+class WhileAST : public SyntaxTree {
+private:
+  std::unique_ptr<SyntaxTree> m_condition;
+  std::vector<std::unique_ptr<SyntaxTree>> m_block;
+
+public:
+  WhileAST(std::shared_ptr<Generator> t_generator,
+           std::unique_ptr<SyntaxTree> t_condition,
+           std::vector<std::unique_ptr<SyntaxTree>> t_block)
+      : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
+        m_block(std::move(t_block)) {}
+  ~WhileAST() = default;
+
+  std::optional<llvm::Value *> codegen() override;
+};
+
+class ForAST : public SyntaxTree {
+private:
+  std::unique_ptr<SyntaxTree> m_initialization;
+  std::unique_ptr<SyntaxTree> m_condition;
+  std::unique_ptr<SyntaxTree> m_updation;
+  std::vector<std::unique_ptr<SyntaxTree>> m_block;
+
+public:
+  ForAST(std::shared_ptr<Generator> t_generator,
+         std::unique_ptr<SyntaxTree> t_initialization,
+         std::unique_ptr<SyntaxTree> t_condition,
+         std::unique_ptr<SyntaxTree> t_updation,
+         std::vector<std::unique_ptr<SyntaxTree>> t_block)
+      : SyntaxTree(t_generator), m_initialization(std::move(t_initialization)),
+        m_condition(std::move(t_condition)), m_updation(std::move(t_updation)),
+        m_block(std::move(t_block)) {}
+  ~ForAST() = default;
 
   std::optional<llvm::Value *> codegen() override;
 };
@@ -150,4 +188,4 @@ public:
   std::optional<llvm::Function *> codegen();
 };
 
-#endif // TESTLANG_SYNTAXTREE_HPP
+#endif // BEAVER_SYNTAXTREE_HPP

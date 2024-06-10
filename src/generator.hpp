@@ -1,5 +1,5 @@
-#ifndef TESTLANG_GENERATOR_HPP
-#define TESTLANG_GENERATOR_HPP
+#ifndef BEAVER_GENERATOR_HPP
+#define BEAVER_GENERATOR_HPP
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -40,4 +40,4 @@ struct Generator {
   Generator();
 };
 
-#endif
+#endif // BEAVER_GENERATOR_HPP

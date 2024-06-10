@@ -1,5 +1,5 @@
-#ifndef TESTLANG_LEXER_HPP
-#define TESTLANG_LEXER_HPP
+#ifndef BEAVER_LEXER_HPP
+#define BEAVER_LEXER_HPP
 
 #include <cctype>
 #include <fstream>
@@ -16,17 +16,20 @@ enum class Token {
   identifier,
   number,
   ifTok,
+  elifTok,
   elseTok,
-  returnTok
+  returnTok,
+  whileTok,
+  forTok
 };
 
 namespace lexer {
 // conversion from strings to tokens
-const std::map<std::string, Token> TokenKeys = {{"fn", Token::func},
-                                                {"extern", Token::externTok},
-                                                {"if", Token::ifTok},
-                                                {"else", Token::elseTok},
-                                                {"ret", Token::returnTok}};
+const std::map<std::string, Token> TokenKeys = {
+    {"fn", Token::func},       {"extern", Token::externTok},
+    {"if", Token::ifTok},      {"else", Token::elseTok},
+    {"ret", Token::returnTok}, {"while", Token::whileTok},
+    {"for", Token::forTok},    {"elif", Token::elifTok}};
 } // namespace lexer
 
 // returns the token if one is found, and Token::identifier otherwise
@@ -109,4 +112,4 @@ public:
   ~StdinLexer() = default;
 };
 
-#endif // TESTLANG_LEXER_HPP
+#endif // BEAVER_LEXER_HPP
