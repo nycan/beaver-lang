@@ -59,13 +59,10 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(
     m_generator->m_context, "", functionCode
   );
-  //functionCode->insert(functionCode->end(), mergedBB);
   llvm::BasicBlock *checkBB = m_generator->m_builder.GetInsertBlock();
   llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
     m_generator->m_context, "", functionCode
   );
-  //functionCode->insert(functionCode->end(), nextBB);
-  functionCode->print(llvm::errs());
 
   unsigned numBlocks = m_conditions.size();
   bool allTerminated = true;
@@ -89,7 +86,6 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     );
 
     // create the conditional branch
-    //functionCode->insert(functionCode->end(), codeBB);
     m_generator->m_builder.CreateCondBr(comparisonCode, codeBB, nextBB);
     m_generator->m_builder.SetInsertPoint(codeBB);
 
@@ -117,10 +113,11 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     
     // I feel like there's a better way to do this...
     if (i < numBlocks-1) {
-      nextBB = llvm::BasicBlock::Create(m_generator->m_context);
+      nextBB = llvm::BasicBlock::Create(
+        m_generator->m_context, "", functionCode
+      );
     }
 
-    //functionCode->insert(functionCode->end(), checkBB);
     m_generator->m_builder.SetInsertPoint(checkBB);
   }
 
@@ -151,7 +148,6 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
   // create merged block
   if(!allTerminated || !elseTerminated) {
-    //functionCode->insert(functionCode->end(), mergedBB);
     m_generator->m_builder.SetInsertPoint(mergedBB);
   }
   // placeholder. the structure will be changed soon
@@ -205,7 +201,6 @@ std::optional<llvm::Value *> WhileAST::codegen() {
   blockBB = m_generator->m_builder.GetInsertBlock();
 
   // Todo: just terminate processing if the block is terminated
-  functionCode->insert(functionCode->end(), afterBB);
   m_generator->m_builder.SetInsertPoint(afterBB);
 
   return afterBB;
@@ -272,7 +267,6 @@ std::optional<llvm::Value *> ForAST::codegen() {
   blockBB = m_generator->m_builder.GetInsertBlock();
 
   // Todo: just terminate processing if the block is terminated
-  functionCode->insert(functionCode->end(), afterBB);
   m_generator->m_builder.SetInsertPoint(afterBB);
 
   return afterBB;
