@@ -1,0 +1,1 @@
+brew install cmake llvm@18 ninja clang-format@18
