@@ -25,14 +25,11 @@ enum class Token {
 
 namespace lexer {
 // conversion from strings to tokens
-const std::map<std::string, Token> TokenKeys = {{"fn", Token::func},
-                                                {"extern", Token::externTok},
-                                                {"if", Token::ifTok},
-                                                {"else", Token::elseTok},
-                                                {"ret", Token::returnTok},
-                                                {"while", Token::whileTok},
-                                                {"for", Token::forTok},
-                                                {"elif", Token::elifTok}};
+const std::map<std::string, Token> TokenKeys = {
+    {"fn", Token::func},       {"extern", Token::externTok},
+    {"if", Token::ifTok},      {"else", Token::elseTok},
+    {"ret", Token::returnTok}, {"while", Token::whileTok},
+    {"for", Token::forTok},    {"elif", Token::elifTok}};
 } // namespace lexer
 
 // returns the token if one is found, and Token::identifier otherwise

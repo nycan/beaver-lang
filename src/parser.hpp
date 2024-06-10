@@ -27,9 +27,8 @@ private:
   std::optional<std::unique_ptr<SyntaxTree>> parseIdentifier();
   // returns 0 iff the block was successfully parsed
   bool parseConditionalBlock(
-    std::vector<std::vector<std::unique_ptr<SyntaxTree>>>& mainBlocks,
-    std::vector<std::unique_ptr<SyntaxTree>>& conditions
-  );
+      std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
+      std::vector<std::unique_ptr<SyntaxTree>> &conditions);
   std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
   std::optional<std::unique_ptr<SyntaxTree>> parseWhile();
   std::optional<std::unique_ptr<SyntaxTree>> parseFor();

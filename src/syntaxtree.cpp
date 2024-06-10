@@ -55,18 +55,16 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
-  
-  llvm::BasicBlock *mergedBB = llvm::BasicBlock::Create(
-    m_generator->m_context, "", functionCode
-  );
+
+  llvm::BasicBlock *mergedBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
   llvm::BasicBlock *checkBB = m_generator->m_builder.GetInsertBlock();
-  llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
-    m_generator->m_context, "", functionCode
-  );
+  llvm::BasicBlock *nextBB =
+      llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
 
   unsigned numBlocks = m_conditions.size();
   bool allTerminated = true;
-  
+
   for (unsigned i = 0; i < numBlocks; ++i) {
     // condition
     std::optional<llvm::Value *> conditionCode = m_conditions[i]->codegen();
@@ -76,14 +74,12 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
     // compare to 0
     llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-      *conditionCode,
-      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
-    );
+        *conditionCode,
+        llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
 
     // create the block with the code
-    llvm::BasicBlock *codeBB = llvm::BasicBlock::Create(
-      m_generator->m_context, "", functionCode
-    );
+    llvm::BasicBlock *codeBB =
+        llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
 
     // create the conditional branch
     m_generator->m_builder.CreateCondBr(comparisonCode, codeBB, nextBB);
@@ -108,14 +104,13 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
       allTerminated = false;
       m_generator->m_builder.CreateBr(mergedBB);
     }
-    
+
     checkBB = nextBB;
-    
+
     // I feel like there's a better way to do this...
-    if (i < numBlocks-1) {
-      nextBB = llvm::BasicBlock::Create(
-        m_generator->m_context, "", functionCode
-      );
+    if (i < numBlocks - 1) {
+      nextBB =
+          llvm::BasicBlock::Create(m_generator->m_context, "", functionCode);
     }
 
     m_generator->m_builder.SetInsertPoint(checkBB);
@@ -145,7 +140,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   }
 
   // create merged block
-  if(!allTerminated || !elseTerminated) {
+  if (!allTerminated || !elseTerminated) {
     m_generator->m_builder.SetInsertPoint(mergedBB);
   } else {
     llvm::DeleteDeadBlock(mergedBB);
@@ -163,10 +158,9 @@ std::optional<llvm::Value *> WhileAST::codegen() {
 
   // compare to 0
   llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-    *conditionCode,
-    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
-  );
-  
+      *conditionCode,
+      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
@@ -178,7 +172,7 @@ std::optional<llvm::Value *> WhileAST::codegen() {
   m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
 
   m_generator->m_builder.SetInsertPoint(blockBB);
-  
+
   bool terminated = false;
   for (auto &line : m_block) {
     std::optional<llvm::Value *> lineCode = line->codegen();
@@ -221,10 +215,9 @@ std::optional<llvm::Value *> ForAST::codegen() {
 
   // compare to 0
   llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-    *conditionCode,
-    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
-  );
-  
+      *conditionCode,
+      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
@@ -236,7 +229,7 @@ std::optional<llvm::Value *> ForAST::codegen() {
   m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
 
   m_generator->m_builder.SetInsertPoint(blockBB);
-  
+
   bool terminated = false;
   for (auto &line : m_block) {
     std::optional<llvm::Value *> lineCode = line->codegen();
@@ -253,7 +246,7 @@ std::optional<llvm::Value *> ForAST::codegen() {
 
   // after it's finished, check whether to go back or go on
   if (!terminated) {
-    //updation
+    // updation
     std::optional<llvm::Value *> updationCode = m_updation->codegen();
     if (!updationCode) {
       return {};

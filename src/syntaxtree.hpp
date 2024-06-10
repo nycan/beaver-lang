@@ -106,13 +106,13 @@ class WhileAST : public SyntaxTree {
 private:
   std::unique_ptr<SyntaxTree> m_condition;
   std::vector<std::unique_ptr<SyntaxTree>> m_block;
+
 public:
-  WhileAST(
-    std::shared_ptr<Generator> t_generator,
-    std::unique_ptr<SyntaxTree> t_condition,
-    std::vector<std::unique_ptr<SyntaxTree>> t_block
-  ): SyntaxTree(t_generator), m_condition(std::move(t_condition)),
-     m_block(std::move(t_block)) {}
+  WhileAST(std::shared_ptr<Generator> t_generator,
+           std::unique_ptr<SyntaxTree> t_condition,
+           std::vector<std::unique_ptr<SyntaxTree>> t_block)
+      : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
+        m_block(std::move(t_block)) {}
   ~WhileAST() = default;
 
   std::optional<llvm::Value *> codegen() override;
@@ -124,16 +124,16 @@ private:
   std::unique_ptr<SyntaxTree> m_condition;
   std::unique_ptr<SyntaxTree> m_updation;
   std::vector<std::unique_ptr<SyntaxTree>> m_block;
+
 public:
-  ForAST(
-    std::shared_ptr<Generator> t_generator,
-    std::unique_ptr<SyntaxTree> t_initialization,
-    std::unique_ptr<SyntaxTree> t_condition,
-    std::unique_ptr<SyntaxTree> t_updation,
-    std::vector<std::unique_ptr<SyntaxTree>> t_block
-  ): SyntaxTree(t_generator), m_initialization(std::move(t_initialization)),
-     m_condition(std::move(t_condition)), m_updation(std::move(t_updation)),
-     m_block(std::move(t_block)) {}
+  ForAST(std::shared_ptr<Generator> t_generator,
+         std::unique_ptr<SyntaxTree> t_initialization,
+         std::unique_ptr<SyntaxTree> t_condition,
+         std::unique_ptr<SyntaxTree> t_updation,
+         std::vector<std::unique_ptr<SyntaxTree>> t_block)
+      : SyntaxTree(t_generator), m_initialization(std::move(t_initialization)),
+        m_condition(std::move(t_condition)), m_updation(std::move(t_updation)),
+        m_block(std::move(t_block)) {}
   ~ForAST() = default;
 
   std::optional<llvm::Value *> codegen() override;

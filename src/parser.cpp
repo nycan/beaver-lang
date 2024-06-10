@@ -92,9 +92,8 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 }
 
 bool Parser::parseConditionalBlock(
-  std::vector<std::vector<std::unique_ptr<SyntaxTree>>>& mainBlocks,
-  std::vector<std::unique_ptr<SyntaxTree>>& conditions
-) {
+    std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
+    std::vector<std::unique_ptr<SyntaxTree>> &conditions) {
   auto condition = parseExpression();
   if (!condition) {
     return 1;
@@ -123,7 +122,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
     // parse "elif"
     m_lexer->nextToken();
 
-    if (parseConditionalBlock(mainBlocks, conditions)){
+    if (parseConditionalBlock(mainBlocks, conditions)) {
       return {};
     }
   }
@@ -162,7 +161,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseWhile() {
   }
 
   return std::make_unique<WhileAST>(m_genData, std::move(*condition),
-                                          std::move(*block));
+                                    std::move(*block));
 }
 
 std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
@@ -200,11 +199,9 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
     return {};
   }
 
-  return std::make_unique<ForAST>(
-    m_genData,
-    std::move(*initialization), std::move(*condition), std::move(*updation),
-    std::move(*block)
-  );
+  return std::make_unique<ForAST>(m_genData, std::move(*initialization),
+                                  std::move(*condition), std::move(*updation),
+                                  std::move(*block));
 }
 
 // helper function for parseMain to parse the last character when the token is
