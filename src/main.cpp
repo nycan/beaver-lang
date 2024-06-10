@@ -10,7 +10,7 @@
 
 // return the index of an flag, if it exists
 size_t findOption(int argc, char **argv, const std::string &option) {
-  if (argc < 0) {
+  if (argc <= 0) {
     return 0;
   }
   auto result = std::find(argv, argv + argc, option);
@@ -121,7 +121,11 @@ int main(int argc, char **argv) {
   // Finalize the engine and call the entry point function
   engine->finalizeObject();
   std::function<double()> entryPoint =
-      reinterpret_cast<double (*)()>(engine->getPointerToNamedFunction("main"));
+      reinterpret_cast<double (*)()>(engine->getFunctionAddress("main"));
+  if (!entryPoint) {
+    llvm::errs() << "No main function found.\n";
+    return 1;
+  }
   std::cout << entryPoint() << '\n';
 
   /*
