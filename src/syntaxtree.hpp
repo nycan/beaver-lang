@@ -11,6 +11,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <iostream>
 #include <map>
 #include <memory>

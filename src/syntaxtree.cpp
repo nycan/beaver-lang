@@ -121,8 +121,6 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     m_generator->m_builder.SetInsertPoint(checkBB);
   }
 
-  functionCode->print(llvm::errs());
-
   // checkBB is now the else block
 
   // generate code for the else block
@@ -149,6 +147,8 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   // create merged block
   if(!allTerminated || !elseTerminated) {
     m_generator->m_builder.SetInsertPoint(mergedBB);
+  } else {
+    llvm::DeleteDeadBlock(mergedBB);
   }
   // placeholder. the structure will be changed soon
   return mergedBB;
