@@ -1,10 +1,10 @@
 #include "syntaxtree.hpp"
 
-std::optional<llvm::Value *> NumberAST::codegen() {
+std::optional<llvm::Value *> NumberAST::codegenE() {
   return llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(m_value));
 };
 
-std::optional<llvm::Value *> VariableAST::codegen() {
+std::optional<llvm::Value *> VariableAST::codegenE() {
   // search in named variables
   llvm::Value *variable = m_generator->m_namedValues[m_name];
   if (!variable) {
@@ -14,16 +14,16 @@ std::optional<llvm::Value *> VariableAST::codegen() {
   return variable;
 };
 
-std::optional<llvm::Value *> BinaryOpAST::codegen() {
-  std::optional<llvm::Value *> leftCode = m_lhs->codegen();
-  std::optional<llvm::Value *> rightCode = m_rhs->codegen();
+std::optional<llvm::Value *> BinaryOpAST::codegenE() {
+  std::optional<llvm::Value *> leftCode = m_lhs->codegenE();
+  std::optional<llvm::Value *> rightCode = m_rhs->codegenE();
   if (!leftCode || !rightCode) {
     return {};
   }
   return m_op.codegen(m_generator, *leftCode, *rightCode);
 };
 
-std::optional<llvm::Value *> CallAST::codegen() {
+std::optional<llvm::Value *> CallAST::codegenE() {
   // search for the function being called
   llvm::Function *calledFunction = m_generator->m_module.getFunction(m_callee);
   if (!calledFunction) {
@@ -41,7 +41,7 @@ std::optional<llvm::Value *> CallAST::codegen() {
   // generate code for each argument
   std::vector<llvm::Value *> argsCode(numArgs);
   for (size_t i = 0; i < numArgs; ++i) {
-    std::optional<llvm::Value *> line = m_args[i]->codegen();
+    std::optional<llvm::Value *> line = m_args[i]->codegenE();
     if (!line) {
       return {};
     }
@@ -67,7 +67,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
   for (unsigned i = 0; i < numBlocks; ++i) {
     // condition
-    std::optional<llvm::Value *> conditionCode = m_conditions[i]->codegen();
+    std::optional<llvm::Value *> conditionCode = m_conditions[i]->codegenE();
     if (!conditionCode) {
       return {};
     }
@@ -151,7 +151,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
 std::optional<llvm::Value *> WhileAST::codegen() {
   // condition
-  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  std::optional<llvm::Value *> conditionCode = m_condition->codegenE();
   if (!conditionCode) {
     return {};
   }
@@ -208,7 +208,7 @@ std::optional<llvm::Value *> ForAST::codegen() {
   }
 
   // condition
-  std::optional<llvm::Value *> conditionCode = m_condition->codegen();
+  std::optional<llvm::Value *> conditionCode = m_condition->codegenE();
   if (!conditionCode) {
     return {};
   }
@@ -287,7 +287,7 @@ std::optional<llvm::Function *> PrototypeAST::codegen() {
 }
 
 std::optional<llvm::Value *> ReturnAST::codegen() {
-  if (auto exprCode = m_expression->codegen()) {
+  if (auto exprCode = m_expression->codegenE()) {
     return m_generator->m_builder.CreateRet(*exprCode);
   }
   return {};
