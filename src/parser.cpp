@@ -29,13 +29,13 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   return result;
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseNum() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::parseNum() {
   auto result = std::make_unique<NumberAST>(m_genData, m_lexer->getNum());
   m_lexer->nextToken();
   return std::move(result);
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseParens() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::parseParens() {
   // parse '('
   m_lexer->nextToken();
 
@@ -52,7 +52,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseParens() {
   return exprResult;
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::parseIdentifier() {
   // parse identifier
   std::string idName = m_lexer->getIdentifier();
   m_lexer->nextToken();
@@ -64,7 +64,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 
   // function call
   m_lexer->nextToken();
-  std::vector<std::unique_ptr<SyntaxTree>> args;
+  std::vector<std::unique_ptr<ExpressionTree>> args;
   while (m_lexer->getChar() != ')') {
     // parse argument
     if (auto argument = parseExpression()) {
@@ -93,7 +93,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseIdentifier() {
 
 bool Parser::parseConditionalBlock(
     std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
-    std::vector<std::unique_ptr<SyntaxTree>> &conditions) {
+    std::vector<std::unique_ptr<ExpressionTree>> &conditions) {
   auto condition = parseExpression();
   if (!condition) {
     return 1;
@@ -114,7 +114,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
   m_lexer->nextToken();
 
   std::vector<std::vector<std::unique_ptr<SyntaxTree>>> mainBlocks;
-  std::vector<std::unique_ptr<SyntaxTree>> conditions;
+  std::vector<std::unique_ptr<ExpressionTree>> conditions;
 
   parseConditionalBlock(mainBlocks, conditions);
 
@@ -206,7 +206,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
 
 // helper function for parseMain to parse the last character when the token is
 // unknown
-std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::handleUnknown() {
   switch (m_lexer->getChar()) {
   case '(':
     return parseParens();
@@ -220,7 +220,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::handleUnknown() {
 }
 
 // parse one "element" of an expression
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMainExpr() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::parseMainExpr() {
   switch (m_lexer->getTok()) {
   case Token::identifier:
     return parseIdentifier();
@@ -240,9 +240,9 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseMainExpr() {
   }
 }
 
-std::optional<std::unique_ptr<SyntaxTree>>
+std::optional<std::unique_ptr<ExpressionTree>>
 Parser::parseOpRHS(const int t_minPrec,
-                   std::unique_ptr<SyntaxTree> t_leftSide) {
+                   std::unique_ptr<ExpressionTree> t_leftSide) {
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
@@ -283,7 +283,7 @@ Parser::parseOpRHS(const int t_minPrec,
   }
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseExpression() {
+std::optional<std::unique_ptr<ExpressionTree>> Parser::parseExpression() {
   auto leftSide = parseMainExpr();
   if (!leftSide) {
     return {};
@@ -376,15 +376,15 @@ std::optional<std::unique_ptr<PrototypeAST>> Parser::parseExtern() {
 
 // wrap top-level expressions in an anonymous prototype
 std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
-  if (auto expr = parseExpression()) {
+  if (auto line = parseInner()) {
     auto prototype = std::make_unique<PrototypeAST>(
         m_genData,
         "somethingThatIllProbablyForgetToChange", // Don't forget to change this
         std::vector<std::string>());
-    std::vector<std::unique_ptr<SyntaxTree>> exprBlock;
-    exprBlock.push_back(std::move(*expr));
+    std::vector<std::unique_ptr<SyntaxTree>> block;
+    block.push_back(std::move(*line));
     return std::make_unique<FunctionAST>(m_genData, std::move(prototype),
-                                         std::move(exprBlock));
+                                         std::move(block));
   }
   return {};
 }

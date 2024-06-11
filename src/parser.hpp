@@ -21,21 +21,21 @@ private:
 
   // Parse functions for various parts of the syntax
   std::optional<std::vector<std::unique_ptr<SyntaxTree>>> parseBlock();
-  std::optional<std::unique_ptr<SyntaxTree>> parseNum();
-  std::optional<std::unique_ptr<SyntaxTree>> parseExpression();
-  std::optional<std::unique_ptr<SyntaxTree>> parseParens();
-  std::optional<std::unique_ptr<SyntaxTree>> parseIdentifier();
+  std::optional<std::unique_ptr<ExpressionTree>> parseNum();
+  std::optional<std::unique_ptr<ExpressionTree>> parseExpression();
+  std::optional<std::unique_ptr<ExpressionTree>> parseParens();
+  std::optional<std::unique_ptr<ExpressionTree>> parseIdentifier();
   // returns 0 iff the block was successfully parsed
   bool parseConditionalBlock(
       std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
-      std::vector<std::unique_ptr<SyntaxTree>> &conditions);
+      std::vector<std::unique_ptr<ExpressionTree>> &conditions);
   std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
   std::optional<std::unique_ptr<SyntaxTree>> parseWhile();
   std::optional<std::unique_ptr<SyntaxTree>> parseFor();
-  std::optional<std::unique_ptr<SyntaxTree>> handleUnknown();
-  std::optional<std::unique_ptr<SyntaxTree>> parseMainExpr();
-  std::optional<std::unique_ptr<SyntaxTree>>
-  parseOpRHS(const int t_minPrec, std::unique_ptr<SyntaxTree> t_leftSide);
+  std::optional<std::unique_ptr<ExpressionTree>> handleUnknown();
+  std::optional<std::unique_ptr<ExpressionTree>> parseMainExpr();
+  std::optional<std::unique_ptr<ExpressionTree>>
+  parseOpRHS(const int t_minPrec, std::unique_ptr<ExpressionTree> t_leftSide);
   std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
   std::optional<std::unique_ptr<SyntaxTree>> parseReturn();
   std::optional<std::unique_ptr<FunctionAST>> parseDefinition();
