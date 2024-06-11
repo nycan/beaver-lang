@@ -51,7 +51,7 @@ std::optional<llvm::Value *> CallAST::codegenE() {
   return m_generator->m_builder.CreateCall(calledFunction, argsCode);
 };
 
-std::optional<llvm::Value *> ConditionalAST::codegen() {
+GenStatus ConditionalAST::codegen() {
   // create blocks
   llvm::Function *functionCode =
       m_generator->m_builder.GetInsertBlock()->getParent();
@@ -69,7 +69,7 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     // condition
     std::optional<llvm::Value *> conditionCode = m_conditions[i]->codegenE();
     if (!conditionCode) {
-      return {};
+      return GenStatus::error;
     }
 
     // compare to 0
@@ -87,9 +87,9 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
 
     bool currTerminated = false;
     for (auto &line : m_mainBlocks[i]) {
-      std::optional<llvm::Value *> mainCode = line->codegen();
-      if (!mainCode) {
-        return {};
+      GenStatus mainResult = line->codegen();
+      if (mainResult == GenStatus::error) {
+        return GenStatus::error;
       }
 
       // only one terminator is allowed
@@ -122,9 +122,9 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
   bool elseTerminated = false;
   if (m_elseBlock) {
     for (auto &line : *m_elseBlock) {
-      std::optional<llvm::Value *> elseCode = line->codegen();
-      if (!elseCode) {
-        return {};
+      GenStatus elseResult = line->codegen();
+      if (elseResult == GenStatus::error) {
+        return GenStatus::error;
       }
 
       if (line->terminatesBlock()) {
@@ -146,10 +146,10 @@ std::optional<llvm::Value *> ConditionalAST::codegen() {
     llvm::DeleteDeadBlock(mergedBB);
   }
   // placeholder. the structure will be changed soon
-  return mergedBB;
+  return GenStatus::ok;
 }
 
-std::optional<llvm::Value *> WhileAST::codegen() {
+GenStatus WhileAST::codegen() {
   // condition
   std::optional<llvm::Value *> conditionCode = m_condition->codegenE();
   if (!conditionCode) {
@@ -175,9 +175,9 @@ std::optional<llvm::Value *> WhileAST::codegen() {
 
   bool terminated = false;
   for (auto &line : m_block) {
-    std::optional<llvm::Value *> lineCode = line->codegen();
-    if (!lineCode) {
-      return {};
+    GenStatus lineResult = line->codegen();
+    if (lineResult == GenStatus::error) {
+      return GenStatus::error;
     }
 
     // can only have one terminator
@@ -197,14 +197,14 @@ std::optional<llvm::Value *> WhileAST::codegen() {
   // Todo: just terminate processing if the block is terminated
   m_generator->m_builder.SetInsertPoint(afterBB);
 
-  return afterBB;
+  return GenStatus::ok;
 }
 
-std::optional<llvm::Value *> ForAST::codegen() {
+GenStatus ForAST::codegen() {
   // intialization
-  std::optional<llvm::Value *> initializationCode = m_initialization->codegen();
-  if (!initializationCode) {
-    return {};
+  GenStatus initializationResult = m_initialization->codegen();
+  if (initializationResult == GenStatus::error) {
+    return GenStatus::error;
   }
 
   // condition
@@ -232,9 +232,9 @@ std::optional<llvm::Value *> ForAST::codegen() {
 
   bool terminated = false;
   for (auto &line : m_block) {
-    std::optional<llvm::Value *> lineCode = line->codegen();
-    if (!lineCode) {
-      return {};
+    GenStatus lineResult = line->codegen();
+    if (lineResult == GenStatus::error) {
+      return GenStatus::error;
     }
 
     // can only have one terminator
@@ -247,9 +247,9 @@ std::optional<llvm::Value *> ForAST::codegen() {
   // after it's finished, check whether to go back or go on
   if (!terminated) {
     // updation
-    std::optional<llvm::Value *> updationCode = m_updation->codegen();
-    if (!updationCode) {
-      return {};
+    GenStatus updationResult = m_updation->codegen();
+    if (updationResult == GenStatus::error) {
+      return GenStatus::error;
     }
 
     if (!m_updation->terminatesBlock()) {
@@ -262,7 +262,7 @@ std::optional<llvm::Value *> ForAST::codegen() {
   // Todo: just terminate processing if the block is terminated
   m_generator->m_builder.SetInsertPoint(afterBB);
 
-  return afterBB;
+  return GenStatus::ok;
 }
 
 std::optional<llvm::Function *> PrototypeAST::codegen() {
@@ -286,11 +286,12 @@ std::optional<llvm::Function *> PrototypeAST::codegen() {
   return funcCode;
 }
 
-std::optional<llvm::Value *> ReturnAST::codegen() {
+GenStatus ReturnAST::codegen() {
   if (auto exprCode = m_expression->codegenE()) {
-    return m_generator->m_builder.CreateRet(*exprCode);
+    m_generator->m_builder.CreateRet(*exprCode);
+    return GenStatus::ok;
   }
-  return {};
+  return GenStatus::error;
 }
 
 std::optional<llvm::Function *> FunctionAST::codegen() {
@@ -327,7 +328,7 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
 
   // parse body
   for (auto &line : m_body) {
-    if (!line->codegen()) {
+    if (line->codegen() == GenStatus::error) {
       (*funcCode)->eraseFromParent();
       return {};
     }

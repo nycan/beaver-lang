@@ -19,6 +19,9 @@
 #include <string>
 #include <vector>
 
+// Options for result of code generation
+enum class GenStatus { ok, terminated, error};
+
 // base AST class
 class SyntaxTree {
 protected:
@@ -28,7 +31,7 @@ public:
   SyntaxTree(std::shared_ptr<Generator> t_generator)
       : m_generator(t_generator) {}
   virtual ~SyntaxTree() = default;
-  virtual std::optional<llvm::Value *> codegen() = 0;
+  virtual GenStatus codegen() = 0;
   virtual bool terminatesBlock() { return false; }
 };
 
@@ -39,8 +42,11 @@ public:
   virtual ~ExpressionTree() = default;
   virtual std::optional<llvm::Value *> codegenE() = 0;
   // temporary
-  std::optional<llvm::Value *> codegen() override final {
-    return codegenE();
+  inline GenStatus codegen() override final {
+    if(codegenE()) {
+      return GenStatus::ok;
+    }
+    return GenStatus::error;
   }
 };
 
@@ -111,7 +117,7 @@ public:
         m_elseBlock(std::move(t_elseBlock)) {}
   ~ConditionalAST() = default;
 
-  std::optional<llvm::Value *> codegen() override;
+  GenStatus codegen() override;
 };
 
 class WhileAST : public SyntaxTree {
@@ -127,7 +133,7 @@ public:
         m_block(std::move(t_block)) {}
   ~WhileAST() = default;
 
-  std::optional<llvm::Value *> codegen() override;
+  GenStatus codegen() override;
 };
 
 class ForAST : public SyntaxTree {
@@ -148,7 +154,7 @@ public:
         m_block(std::move(t_block)) {}
   ~ForAST() = default;
 
-  std::optional<llvm::Value *> codegen() override;
+  GenStatus codegen() override;
 };
 
 class PrototypeAST {
@@ -178,7 +184,7 @@ public:
       : SyntaxTree(t_generator), m_expression(std::move(t_expression)) {}
   ~ReturnAST() = default;
 
-  std::optional<llvm::Value *> codegen() override;
+  GenStatus codegen() override;
   virtual bool terminatesBlock() override { return true; }
 };
 
