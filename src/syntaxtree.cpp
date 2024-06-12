@@ -90,10 +90,7 @@ GenStatus ConditionalAST::codegen() {
       GenStatus mainResult = line->codegen();
       if (mainResult == GenStatus::error) {
         return GenStatus::error;
-      }
-
-      // only one terminator is allowed
-      if (line->terminatesBlock()) {
+      } if (mainResult == GenStatus::terminated) { // only one terminator allowed
         currTerminated = true;
         break;
       }
@@ -125,9 +122,7 @@ GenStatus ConditionalAST::codegen() {
       GenStatus elseResult = line->codegen();
       if (elseResult == GenStatus::error) {
         return GenStatus::error;
-      }
-
-      if (line->terminatesBlock()) {
+      } else if (elseResult == GenStatus::terminated) {
         elseTerminated = true;
         break;
       }
@@ -144,6 +139,7 @@ GenStatus ConditionalAST::codegen() {
     m_generator->m_builder.SetInsertPoint(mergedBB);
   } else {
     llvm::DeleteDeadBlock(mergedBB);
+    return GenStatus::terminated;
   }
   // placeholder. the structure will be changed soon
   return GenStatus::ok;
@@ -176,25 +172,12 @@ GenStatus WhileAST::codegen() {
   bool terminated = false;
   for (auto &line : m_block) {
     GenStatus lineResult = line->codegen();
-    if (lineResult == GenStatus::error) {
-      return GenStatus::error;
-    }
-
-    // can only have one terminator
-    if (line->terminatesBlock()) {
-      terminated = true;
-      break;
+    if (lineResult != GenStatus::ok) {
+      return lineResult;
     }
   }
 
-  // after it's finished, check whether to go back or go on
-  if (!terminated) {
-    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
-  }
-
-  blockBB = m_generator->m_builder.GetInsertBlock();
-
-  // Todo: just terminate processing if the block is terminated
+  m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
   m_generator->m_builder.SetInsertPoint(afterBB);
 
   return GenStatus::ok;
@@ -203,8 +186,8 @@ GenStatus WhileAST::codegen() {
 GenStatus ForAST::codegen() {
   // intialization
   GenStatus initializationResult = m_initialization->codegen();
-  if (initializationResult == GenStatus::error) {
-    return GenStatus::error;
+  if (initializationResult != GenStatus::ok) {
+    return initializationResult;
   }
 
   // condition
@@ -215,8 +198,9 @@ GenStatus ForAST::codegen() {
 
   // compare to 0
   llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-      *conditionCode,
-      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
+    *conditionCode,
+    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
+  );
 
   // create blocks
   llvm::Function *functionCode =
@@ -233,34 +217,23 @@ GenStatus ForAST::codegen() {
   bool terminated = false;
   for (auto &line : m_block) {
     GenStatus lineResult = line->codegen();
-    if (lineResult == GenStatus::error) {
-      return GenStatus::error;
-    }
-
-    // can only have one terminator
-    if (line->terminatesBlock()) {
-      terminated = true;
-      break;
+    if (lineResult != GenStatus::ok) {
+      return lineResult;
     }
   }
 
-  // after it's finished, check whether to go back or go on
-  if (!terminated) {
-    // updation
-    GenStatus updationResult = m_updation->codegen();
-    if (updationResult == GenStatus::error) {
-      return GenStatus::error;
-    }
-
-    if (!m_updation->terminatesBlock()) {
-      m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
-    }
+  // updation
+  GenStatus updationResult = m_updation->codegen();
+  if (updationResult == GenStatus::error) {
+    return GenStatus::error;
   }
 
-  blockBB = m_generator->m_builder.GetInsertBlock();
+  if (!m_updation->terminatesBlock()) {
+    m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
+  }
 
-  // Todo: just terminate processing if the block is terminated
-  m_generator->m_builder.SetInsertPoint(afterBB);
+// Todo: just terminate processing if the block is terminated
+m_generator->m_builder.SetInsertPoint(afterBB);
 
   return GenStatus::ok;
 }
@@ -289,7 +262,7 @@ std::optional<llvm::Function *> PrototypeAST::codegen() {
 GenStatus ReturnAST::codegen() {
   if (auto exprCode = m_expression->codegenE()) {
     m_generator->m_builder.CreateRet(*exprCode);
-    return GenStatus::ok;
+    return GenStatus::terminated;
   }
   return GenStatus::error;
 }
@@ -328,9 +301,12 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
 
   // parse body
   for (auto &line : m_body) {
-    if (line->codegen() == GenStatus::error) {
+    GenStatus lineResult = line->codegen();
+    if (lineResult == GenStatus::error) {
       (*funcCode)->eraseFromParent();
       return {};
+    } else if (lineResult == GenStatus::terminated) {
+      break;
     }
   }
 
