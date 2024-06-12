@@ -20,7 +20,7 @@
 #include <vector>
 
 // Options for result of code generation
-enum class GenStatus { ok, terminated, error};
+enum class GenStatus { ok, terminated, error };
 
 // base AST class
 class SyntaxTree {
@@ -38,12 +38,12 @@ public:
 class ExpressionTree : public SyntaxTree {
 public:
   ExpressionTree(std::shared_ptr<Generator> t_generator)
-  : SyntaxTree(t_generator) {}
+      : SyntaxTree(t_generator) {}
   virtual ~ExpressionTree() = default;
   virtual std::optional<llvm::Value *> codegenE() = 0;
   // temporary
   inline GenStatus codegen() override final {
-    if(codegenE()) {
+    if (codegenE()) {
       return GenStatus::ok;
     }
     return GenStatus::error;
@@ -82,8 +82,7 @@ private:
 
 public:
   BinaryOpAST(std::shared_ptr<Generator> t_generator, const Operation t_op,
-              expressionPtr t_lhs,
-              expressionPtr t_rhs)
+              expressionPtr t_lhs, expressionPtr t_rhs)
       : ExpressionTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),
         m_rhs(std::move(t_rhs)) {}
   std::optional<llvm::Value *> codegenE() override;
@@ -98,8 +97,8 @@ private:
 public:
   CallAST(std::shared_ptr<Generator> t_generator, const std::string &t_callee,
           std::vector<expressionPtr> t_args)
-      : ExpressionTree(t_generator), m_callee(t_callee), m_args(std::move(t_args)) {
-  }
+      : ExpressionTree(t_generator), m_callee(t_callee),
+        m_args(std::move(t_args)) {}
   std::optional<llvm::Value *> codegenE() override;
 };
 
@@ -111,11 +110,10 @@ private:
   std::optional<blockPtr> m_elseBlock;
 
 public:
-  ConditionalAST(
-      std::shared_ptr<Generator> t_generator,
-      std::vector<expressionPtr> t_conditions,
-      std::vector<blockPtr> t_mainBlocks,
-      std::optional<blockPtr> t_elseBlock)
+  ConditionalAST(std::shared_ptr<Generator> t_generator,
+                 std::vector<expressionPtr> t_conditions,
+                 std::vector<blockPtr> t_mainBlocks,
+                 std::optional<blockPtr> t_elseBlock)
       : SyntaxTree(t_generator), m_conditions(std::move(t_conditions)),
         m_mainBlocks(std::move(t_mainBlocks)),
         m_elseBlock(std::move(t_elseBlock)) {}
@@ -130,8 +128,7 @@ private:
   blockPtr m_block;
 
 public:
-  WhileAST(std::shared_ptr<Generator> t_generator,
-           expressionPtr t_condition,
+  WhileAST(std::shared_ptr<Generator> t_generator, expressionPtr t_condition,
            blockPtr t_block)
       : SyntaxTree(t_generator), m_condition(std::move(t_condition)),
         m_block(std::move(t_block)) {}
@@ -148,11 +145,8 @@ private:
   blockPtr m_block;
 
 public:
-  ForAST(std::shared_ptr<Generator> t_generator,
-         linePtr t_initialization,
-         expressionPtr t_condition,
-         linePtr t_updation,
-         blockPtr t_block)
+  ForAST(std::shared_ptr<Generator> t_generator, linePtr t_initialization,
+         expressionPtr t_condition, linePtr t_updation, blockPtr t_block)
       : SyntaxTree(t_generator), m_initialization(std::move(t_initialization)),
         m_condition(std::move(t_condition)), m_updation(std::move(t_updation)),
         m_block(std::move(t_block)) {}
@@ -183,8 +177,7 @@ private:
   expressionPtr m_expression;
 
 public:
-  ReturnAST(std::shared_ptr<Generator> t_generator,
-            expressionPtr t_expression)
+  ReturnAST(std::shared_ptr<Generator> t_generator, expressionPtr t_expression)
       : SyntaxTree(t_generator), m_expression(std::move(t_expression)) {}
   ~ReturnAST() = default;
 
@@ -201,8 +194,7 @@ private:
 
 public:
   FunctionAST(std::shared_ptr<Generator> t_generator,
-              std::unique_ptr<PrototypeAST> t_prototype,
-              blockPtr t_body)
+              std::unique_ptr<PrototypeAST> t_prototype, blockPtr t_body)
       : m_generator(t_generator), m_prototype(std::move(t_prototype)),
         m_body(std::move(t_body)) {}
   ~FunctionAST() = default;

@@ -90,7 +90,8 @@ GenStatus ConditionalAST::codegen() {
       GenStatus mainResult = line->codegen();
       if (mainResult == GenStatus::error) {
         return GenStatus::error;
-      } if (mainResult == GenStatus::terminated) { // only one terminator allowed
+      }
+      if (mainResult == GenStatus::terminated) { // only one terminator allowed
         currTerminated = true;
         break;
       }
@@ -198,9 +199,8 @@ GenStatus ForAST::codegen() {
 
   // compare to 0
   llvm::Value *comparisonCode = m_generator->m_builder.CreateFCmpONE(
-    *conditionCode,
-    llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0))
-  );
+      *conditionCode,
+      llvm::ConstantFP::get(m_generator->m_context, llvm::APFloat(0.0)));
 
   // create blocks
   llvm::Function *functionCode =
@@ -232,8 +232,8 @@ GenStatus ForAST::codegen() {
     m_generator->m_builder.CreateCondBr(comparisonCode, blockBB, afterBB);
   }
 
-// Todo: just terminate processing if the block is terminated
-m_generator->m_builder.SetInsertPoint(afterBB);
+  // Todo: just terminate processing if the block is terminated
+  m_generator->m_builder.SetInsertPoint(afterBB);
 
   return GenStatus::ok;
 }

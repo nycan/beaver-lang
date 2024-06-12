@@ -26,16 +26,15 @@ private:
   std::optional<expressionPtr> parseParens();
   std::optional<expressionPtr> parseIdentifier();
   // returns 0 iff the block was successfully parsed
-  bool parseConditionalBlock(
-      std::vector<blockPtr> &mainBlocks,
-      std::vector<expressionPtr> &conditions);
+  bool parseConditionalBlock(std::vector<blockPtr> &mainBlocks,
+                             std::vector<expressionPtr> &conditions);
   std::optional<linePtr> parseConditional();
   std::optional<linePtr> parseWhile();
   std::optional<linePtr> parseFor();
   std::optional<expressionPtr> handleUnknown();
   std::optional<expressionPtr> parseMainExpr();
-  std::optional<expressionPtr>
-  parseOpRHS(const int t_minPrec, expressionPtr t_leftSide);
+  std::optional<expressionPtr> parseOpRHS(const int t_minPrec,
+                                          expressionPtr t_leftSide);
   std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
   std::optional<linePtr> parseReturn();
   std::optional<std::unique_ptr<FunctionAST>> parseDefinition();

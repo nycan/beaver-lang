@@ -91,9 +91,8 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
   return std::make_unique<CallAST>(m_genData, idName, std::move(args));
 }
 
-bool Parser::parseConditionalBlock(
-    std::vector<blockPtr> &mainBlocks,
-    std::vector<expressionPtr> &conditions) {
+bool Parser::parseConditionalBlock(std::vector<blockPtr> &mainBlocks,
+                                   std::vector<expressionPtr> &conditions) {
   auto condition = parseExpression();
   if (!condition) {
     return 1;
@@ -240,9 +239,8 @@ std::optional<expressionPtr> Parser::parseMainExpr() {
   }
 }
 
-std::optional<expressionPtr>
-Parser::parseOpRHS(const int t_minPrec,
-                   expressionPtr t_leftSide) {
+std::optional<expressionPtr> Parser::parseOpRHS(const int t_minPrec,
+                                                expressionPtr t_leftSide) {
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
