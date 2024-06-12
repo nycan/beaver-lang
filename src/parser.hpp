@@ -20,28 +20,28 @@ private:
   std::shared_ptr<Generator> m_genData;
 
   // Parse functions for various parts of the syntax
-  std::optional<std::vector<std::unique_ptr<SyntaxTree>>> parseBlock();
-  std::optional<std::unique_ptr<ExpressionTree>> parseNum();
-  std::optional<std::unique_ptr<ExpressionTree>> parseExpression();
-  std::optional<std::unique_ptr<ExpressionTree>> parseParens();
-  std::optional<std::unique_ptr<ExpressionTree>> parseIdentifier();
+  std::optional<blockPtr> parseBlock();
+  std::optional<expressionPtr> parseNum();
+  std::optional<expressionPtr> parseExpression();
+  std::optional<expressionPtr> parseParens();
+  std::optional<expressionPtr> parseIdentifier();
   // returns 0 iff the block was successfully parsed
   bool parseConditionalBlock(
-      std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
-      std::vector<std::unique_ptr<ExpressionTree>> &conditions);
-  std::optional<std::unique_ptr<SyntaxTree>> parseConditional();
-  std::optional<std::unique_ptr<SyntaxTree>> parseWhile();
-  std::optional<std::unique_ptr<SyntaxTree>> parseFor();
-  std::optional<std::unique_ptr<ExpressionTree>> handleUnknown();
-  std::optional<std::unique_ptr<ExpressionTree>> parseMainExpr();
-  std::optional<std::unique_ptr<ExpressionTree>>
-  parseOpRHS(const int t_minPrec, std::unique_ptr<ExpressionTree> t_leftSide);
+      std::vector<blockPtr> &mainBlocks,
+      std::vector<expressionPtr> &conditions);
+  std::optional<linePtr> parseConditional();
+  std::optional<linePtr> parseWhile();
+  std::optional<linePtr> parseFor();
+  std::optional<expressionPtr> handleUnknown();
+  std::optional<expressionPtr> parseMainExpr();
+  std::optional<expressionPtr>
+  parseOpRHS(const int t_minPrec, expressionPtr t_leftSide);
   std::optional<std::unique_ptr<PrototypeAST>> parsePrototype();
-  std::optional<std::unique_ptr<SyntaxTree>> parseReturn();
+  std::optional<linePtr> parseReturn();
   std::optional<std::unique_ptr<FunctionAST>> parseDefinition();
   std::optional<std::unique_ptr<PrototypeAST>> parseExtern();
   std::optional<std::unique_ptr<FunctionAST>> parseTopLevel();
-  std::optional<std::unique_ptr<SyntaxTree>> parseInner();
+  std::optional<linePtr> parseInner();
 
 public:
   Parser(std::unique_ptr<Lexer> t_lexer, std::shared_ptr<Generator> t_genData)

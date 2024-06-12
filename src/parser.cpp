@@ -1,7 +1,7 @@
 #include "parser.hpp"
 
 // helper function for blocks
-std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
+std::optional<blockPtr> Parser::parseBlock() {
   // parse '{'
   if (m_lexer->getChar() != '{') {
     llvm::errs() << "Expected '{'.";
@@ -10,7 +10,7 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   m_lexer->nextToken();
 
   // parse body
-  std::vector<std::unique_ptr<SyntaxTree>> result;
+  blockPtr result;
   while (m_lexer->getChar() != '}') {
     if (m_lexer->getChar() == EOF) {
       llvm::errs() << "Expected '}'.";
@@ -29,13 +29,13 @@ std::optional<std::vector<std::unique_ptr<SyntaxTree>>> Parser::parseBlock() {
   return result;
 }
 
-std::optional<std::unique_ptr<ExpressionTree>> Parser::parseNum() {
+std::optional<expressionPtr> Parser::parseNum() {
   auto result = std::make_unique<NumberAST>(m_genData, m_lexer->getNum());
   m_lexer->nextToken();
   return std::move(result);
 }
 
-std::optional<std::unique_ptr<ExpressionTree>> Parser::parseParens() {
+std::optional<expressionPtr> Parser::parseParens() {
   // parse '('
   m_lexer->nextToken();
 
@@ -52,7 +52,7 @@ std::optional<std::unique_ptr<ExpressionTree>> Parser::parseParens() {
   return exprResult;
 }
 
-std::optional<std::unique_ptr<ExpressionTree>> Parser::parseIdentifier() {
+std::optional<expressionPtr> Parser::parseIdentifier() {
   // parse identifier
   std::string idName = m_lexer->getIdentifier();
   m_lexer->nextToken();
@@ -64,7 +64,7 @@ std::optional<std::unique_ptr<ExpressionTree>> Parser::parseIdentifier() {
 
   // function call
   m_lexer->nextToken();
-  std::vector<std::unique_ptr<ExpressionTree>> args;
+  std::vector<expressionPtr> args;
   while (m_lexer->getChar() != ')') {
     // parse argument
     if (auto argument = parseExpression()) {
@@ -92,8 +92,8 @@ std::optional<std::unique_ptr<ExpressionTree>> Parser::parseIdentifier() {
 }
 
 bool Parser::parseConditionalBlock(
-    std::vector<std::vector<std::unique_ptr<SyntaxTree>>> &mainBlocks,
-    std::vector<std::unique_ptr<ExpressionTree>> &conditions) {
+    std::vector<blockPtr> &mainBlocks,
+    std::vector<expressionPtr> &conditions) {
   auto condition = parseExpression();
   if (!condition) {
     return 1;
@@ -109,12 +109,12 @@ bool Parser::parseConditionalBlock(
   return 0;
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
+std::optional<linePtr> Parser::parseConditional() {
   // parse 'if'
   m_lexer->nextToken();
 
-  std::vector<std::vector<std::unique_ptr<SyntaxTree>>> mainBlocks;
-  std::vector<std::unique_ptr<ExpressionTree>> conditions;
+  std::vector<blockPtr> mainBlocks;
+  std::vector<expressionPtr> conditions;
 
   parseConditionalBlock(mainBlocks, conditions);
 
@@ -128,7 +128,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
   }
 
   // if an else block exists, parse it
-  std::optional<std::vector<std::unique_ptr<SyntaxTree>>> elseBlock;
+  std::optional<blockPtr> elseBlock;
   if (m_lexer->getTok() == Token::elseTok) {
     // parse "else"
     m_lexer->nextToken();
@@ -144,7 +144,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseConditional() {
                                           std::move(elseBlock));
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseWhile() {
+std::optional<linePtr> Parser::parseWhile() {
   // parse 'while'
   m_lexer->nextToken();
 
@@ -164,7 +164,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseWhile() {
                                     std::move(*block));
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
+std::optional<linePtr> Parser::parseFor() {
   // parse 'for'
   m_lexer->nextToken();
 
@@ -206,7 +206,7 @@ std::optional<std::unique_ptr<SyntaxTree>> Parser::parseFor() {
 
 // helper function for parseMain to parse the last character when the token is
 // unknown
-std::optional<std::unique_ptr<ExpressionTree>> Parser::handleUnknown() {
+std::optional<expressionPtr> Parser::handleUnknown() {
   switch (m_lexer->getChar()) {
   case '(':
     return parseParens();
@@ -220,7 +220,7 @@ std::optional<std::unique_ptr<ExpressionTree>> Parser::handleUnknown() {
 }
 
 // parse one "element" of an expression
-std::optional<std::unique_ptr<ExpressionTree>> Parser::parseMainExpr() {
+std::optional<expressionPtr> Parser::parseMainExpr() {
   switch (m_lexer->getTok()) {
   case Token::identifier:
     return parseIdentifier();
@@ -240,9 +240,9 @@ std::optional<std::unique_ptr<ExpressionTree>> Parser::parseMainExpr() {
   }
 }
 
-std::optional<std::unique_ptr<ExpressionTree>>
+std::optional<expressionPtr>
 Parser::parseOpRHS(const int t_minPrec,
-                   std::unique_ptr<ExpressionTree> t_leftSide) {
+                   expressionPtr t_leftSide) {
   while (true) {
     // parse operation
     auto op = getOpFromKey(m_lexer->getOperation());
@@ -283,7 +283,7 @@ Parser::parseOpRHS(const int t_minPrec,
   }
 }
 
-std::optional<std::unique_ptr<ExpressionTree>> Parser::parseExpression() {
+std::optional<expressionPtr> Parser::parseExpression() {
   auto leftSide = parseMainExpr();
   if (!leftSide) {
     return {};
@@ -340,7 +340,7 @@ std::optional<std::unique_ptr<PrototypeAST>> Parser::parsePrototype() {
   return std::make_unique<PrototypeAST>(m_genData, funcName, std::move(args));
 }
 
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseReturn() {
+std::optional<linePtr> Parser::parseReturn() {
   // parse "ret"
   m_lexer->nextToken();
 
@@ -381,7 +381,7 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
         m_genData,
         "somethingThatIllProbablyForgetToChange", // Don't forget to change this
         std::vector<std::string>());
-    std::vector<std::unique_ptr<SyntaxTree>> block;
+    blockPtr block;
     block.push_back(std::move(*line));
     return std::make_unique<FunctionAST>(m_genData, std::move(prototype),
                                          std::move(block));
@@ -390,7 +390,7 @@ std::optional<std::unique_ptr<FunctionAST>> Parser::parseTopLevel() {
 }
 
 // parse inner lines such as conditionals, returns and expressions
-std::optional<std::unique_ptr<SyntaxTree>> Parser::parseInner() {
+std::optional<linePtr> Parser::parseInner() {
   switch (m_lexer->getTok()) {
   case Token::ifTok:
     return parseConditional();
