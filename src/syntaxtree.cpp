@@ -6,12 +6,13 @@ std::optional<llvm::Value *> NumberAST::codegenE() {
 
 std::optional<llvm::Value *> VariableAST::codegenE() {
   // search in named variables
-  llvm::Value *variable = m_generator->m_namedValues[m_name];
+  llvm::AllocaInst *variable = m_generator->m_namedValues[m_name];
   if (!variable) {
-    std::cerr << "Unknown variable name.\n";
+    llvm::errs() << "Unknown variable name.\n";
+    return {};
   }
 
-  return variable;
+  return m_generator->m_builder.CreateLoad(variable->getAllocatedType(), variable);
 };
 
 std::optional<llvm::Value *> BinaryOpAST::codegenE() {
@@ -296,7 +297,11 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
   // make the only named values the ones defined in the prototype
   m_generator->m_namedValues.clear();
   for (auto &arg : (*funcCode)->args()) {
-    m_generator->m_namedValues[static_cast<std::string>(arg.getName())] = &arg;
+    llvm::AllocaInst *argInst = m_generator->m_builder.CreateAlloca(
+      llvm::Type::getDoubleTy(m_generator->m_context)
+    );
+    m_generator->m_builder.CreateStore(&arg, argInst);
+    m_generator->m_namedValues[static_cast<std::string>(arg.getName())] = argInst;
   }
 
   // parse body

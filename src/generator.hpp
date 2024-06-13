@@ -24,7 +24,7 @@ struct Generator {
   llvm::LLVMContext m_context;
   llvm::IRBuilder<> m_builder;
   llvm::Module m_module;
-  std::map<std::string, llvm::Value *> m_namedValues;
+  std::map<std::string, llvm::AllocaInst *> m_namedValues;
 
   // stuff for optimization
   llvm::FunctionPassManager m_funcPass;
