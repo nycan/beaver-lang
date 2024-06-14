@@ -82,6 +82,25 @@ const Operation NOTEQTO = {
           llvm::Type::getDoubleTy(t_gen->m_builder.getContext()));
     }};
 
+// Assignment operators
+const Operation ASSIGN = {
+    1, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      t_gen->m_builder.CreateStore(t_lhs, t_rhs);
+      return t_rhs;
+    }};
+
+const Operation PLUSEQ = {
+    1, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+        llvm::Type::getDoubleTy(t_gen->m_context), t_lhs
+      );
+      llvm::Value *res = t_gen->m_builder.CreateFAdd(load, t_rhs);
+      t_gen->m_builder.CreateStore(t_lhs, res);
+      return res;
+    }};
+
 // Map of symbols to operations
 const std::map<std::string, Operation> opKeys = {
     {"+", ADD},        {"-", SUB},      {"*", MULT},    {"/", DIV},
