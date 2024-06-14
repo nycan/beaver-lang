@@ -31,6 +31,7 @@ private:
   std::optional<linePtr> parseConditional();
   std::optional<linePtr> parseWhile();
   std::optional<linePtr> parseFor();
+  std::optional<linePtr> parseDecl();
   std::optional<expressionPtr> handleUnknown();
   std::optional<expressionPtr> parseMainExpr();
   std::optional<expressionPtr> parseOpRHS(const int t_minPrec,

@@ -240,10 +240,16 @@ GenStatus ForAST::codegen() {
 }
 
 GenStatus DeclarationAST::codegen() {
+  if (m_generator->m_namedValues.find(m_name) != m_generator->m_namedValues.end()) {
+    llvm::errs() << "Variable '" << m_name << "' already exists in this scope.\n";
+    return GenStatus::error;
+  }
   llvm::AllocaInst *inst = m_generator->m_builder.CreateAlloca(
     llvm::Type::getDoubleTy(m_generator->m_context)
   );
   m_generator->m_namedValues[m_name] = inst;
+  
+  return GenStatus::ok;
 }
 
 std::optional<llvm::Function *> PrototypeAST::codegen() {

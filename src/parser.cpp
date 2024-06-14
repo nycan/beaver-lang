@@ -203,6 +203,21 @@ std::optional<linePtr> Parser::parseFor() {
                                   std::move(*block));
 }
 
+std::optional<linePtr> Parser::parseDecl() {
+  // eat 'let'
+  m_lexer->nextToken();
+
+  // variable name
+  if (m_lexer->getTok() != Token::identifier) {
+    llvm::errs() << "Expected identifier\n";
+  }
+
+  std::string varName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
+
+  return std::make_unique<DeclarationAST>(m_genData, varName);
+}
+
 // helper function for parseMain to parse the last character when the token is
 // unknown
 std::optional<expressionPtr> Parser::handleUnknown() {
@@ -398,6 +413,8 @@ std::optional<linePtr> Parser::parseInner() {
     return parseWhile();
   case Token::forTok:
     return parseFor();
+  case Token::letTok:
+    return parseDecl();
   case Token::elifTok:
     llvm::errs() << "Got 'elif' with no 'if' to match.\n";
   case Token::elseTok:
