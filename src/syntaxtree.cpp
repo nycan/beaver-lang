@@ -239,6 +239,13 @@ GenStatus ForAST::codegen() {
   return GenStatus::ok;
 }
 
+GenStatus DeclarationAST::codegen() {
+  llvm::AllocaInst *inst = m_generator->m_builder.CreateAlloca(
+    llvm::Type::getDoubleTy(m_generator->m_context)
+  );
+  m_generator->m_namedValues[m_name] = inst;
+}
+
 std::optional<llvm::Function *> PrototypeAST::codegen() {
   // all doubles for now
   std::vector<llvm::Type *> tmpType(
