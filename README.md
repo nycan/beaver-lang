@@ -1,5 +1,6 @@
 # Beaver language
-A language built with LLVM for CS20. Still in early stages of development. \
+A compiler for my own (still very minimal) language built as an SDS for CS20. It includes functions, mutable variables and complex expressions. \
+
 Received help from:
 - StackOverflow
 - LLVM Kaleidoscope tutorial
