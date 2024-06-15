@@ -330,6 +330,8 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
     }
   }
 
+  (*funcCode)->print(llvm::errs());
+
   // verify the generated code
   if (llvm::verifyFunction(**funcCode, &llvm::errs())) {
     return {};

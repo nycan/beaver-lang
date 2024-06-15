@@ -258,7 +258,7 @@ std::optional<expressionPtr> Parser::parseOpRHS(const int t_minPrec,
                                                 expressionPtr t_leftSide) {
   while (true) {
     // parse operation
-    auto op = getOpFromKey(m_lexer->getOperation());
+    auto op = getBinOp(m_lexer->getOperation());
     if (!op) {
       return t_leftSide;
     }
@@ -276,13 +276,13 @@ std::optional<expressionPtr> Parser::parseOpRHS(const int t_minPrec,
     }
 
     // if the expression continues, parse it
-    auto nextOp = getOpFromKey(m_lexer->getOperation());
+    auto nextOp = getBinOp(m_lexer->getOperation());
     if (!nextOp.has_value()) {
       return std::make_unique<BinaryOpAST>(
           m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
     }
-    // if the next operator is higher precedence, it needs to be handled before
-    // this one parse recursively
+    // if the next operator is higher precedence, it needs to be handled
+    // before this one parse recursively
 
     if (op->precedence < nextOp->precedence) {
       rightSide = parseOpRHS(op->precedence + 1, std::move(*rightSide));

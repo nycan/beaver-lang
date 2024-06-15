@@ -145,9 +145,16 @@ const std::map<std::string, Operation> opKeys = {
     {"%", MOD},        {"<", LESSER},   {">", GREATER},  {"<=", LESSEREQ},
     {">=", GREATEREQ}, {"==", EQUALTO}, {"!=", NOTEQTO}, {"+=", PLUSEQ},
     {"-=", MINUSEQ},   {"*=", TIMESEQ}, {"/=", DIVEQ},   {"%=", MODEQ}};
+
+const std::map<std::string, Operation> assignmentKeys = {
+    {"=", ASSIGN},
+    {"-=", MINUSEQ},   {"*=", TIMESEQ}, {"/=", DIVEQ},   {"%=", MODEQ}
+};
+
 } // namespace operations
 
 // find operation given text
-std::optional<Operation> getOpFromKey(std::string t_key);
+std::optional<Operation> getBinOp(std::string t_key);
+std::optional<Operation> getAssignmentOp(std::string t_key);
 
 #endif // BEAVER_OPERATIONS_HPP
