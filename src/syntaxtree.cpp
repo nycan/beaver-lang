@@ -12,7 +12,8 @@ std::optional<llvm::Value *> VariableAST::codegenE() {
     return {};
   }
 
-  return m_generator->m_builder.CreateLoad(variable->getAllocatedType(), variable);
+  return m_generator->m_builder.CreateLoad(variable->getAllocatedType(),
+                                           variable);
 };
 
 std::optional<llvm::Value *> BinaryOpAST::codegenE() {
@@ -240,15 +241,16 @@ GenStatus ForAST::codegen() {
 }
 
 GenStatus DeclarationAST::codegen() {
-  if (m_generator->m_namedValues.find(m_name) != m_generator->m_namedValues.end()) {
-    llvm::errs() << "Variable '" << m_name << "' already exists in this scope.\n";
+  if (m_generator->m_namedValues.find(m_name) !=
+      m_generator->m_namedValues.end()) {
+    llvm::errs() << "Variable '" << m_name
+                 << "' already exists in this scope.\n";
     return GenStatus::error;
   }
   llvm::AllocaInst *inst = m_generator->m_builder.CreateAlloca(
-    llvm::Type::getDoubleTy(m_generator->m_context)
-  );
+      llvm::Type::getDoubleTy(m_generator->m_context));
   m_generator->m_namedValues[m_name] = inst;
-  
+
   return GenStatus::ok;
 }
 
@@ -311,10 +313,10 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
   m_generator->m_namedValues.clear();
   for (auto &arg : (*funcCode)->args()) {
     llvm::AllocaInst *argInst = m_generator->m_builder.CreateAlloca(
-      llvm::Type::getDoubleTy(m_generator->m_context)
-    );
+        llvm::Type::getDoubleTy(m_generator->m_context));
     m_generator->m_builder.CreateStore(&arg, argInst);
-    m_generator->m_namedValues[static_cast<std::string>(arg.getName())] = argInst;
+    m_generator->m_namedValues[static_cast<std::string>(arg.getName())] =
+        argInst;
   }
 
   // parse body

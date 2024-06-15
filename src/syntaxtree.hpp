@@ -160,8 +160,8 @@ private:
   std::string m_name;
 
 public:
-  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string& t_name):
-    SyntaxTree(t_generator), m_name(t_name) {}
+  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string &t_name)
+      : SyntaxTree(t_generator), m_name(t_name) {}
   ~DeclarationAST() = default;
 
   GenStatus codegen() override;
