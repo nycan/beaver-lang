@@ -173,10 +173,11 @@ public:
 class DeclarationAST : public SyntaxTree {
 private:
   std::string m_name;
+  std::optional<expressionPtr> m_value;
 
 public:
-  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string &t_name)
-      : SyntaxTree(t_generator), m_name(t_name) {}
+  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string &t_name, std::optional<expressionPtr> t_value)
+      : SyntaxTree(t_generator), m_name(t_name), m_value(std::move(t_value)) {}
   ~DeclarationAST() = default;
 
   GenStatus codegen() override;

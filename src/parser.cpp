@@ -235,7 +235,18 @@ std::optional<linePtr> Parser::parseDecl() {
   std::string varName = m_lexer->getIdentifier();
   m_lexer->nextToken();
 
-  return std::make_unique<DeclarationAST>(m_genData, varName);
+  std::optional<expressionPtr> value = {};
+
+  if (m_lexer->getOperation() == "=") {
+    m_lexer->nextToken();
+
+    value = parseExpression();
+    if (!value) {
+      return {};
+    }
+  }
+
+  return std::make_unique<DeclarationAST>(m_genData, varName, std::move(value));
 }
 
 // helper function for parseMain to parse the last character when the token is

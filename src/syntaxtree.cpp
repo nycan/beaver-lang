@@ -265,6 +265,16 @@ GenStatus DeclarationAST::codegen() {
       llvm::Type::getDoubleTy(m_generator->m_context));
   m_generator->m_namedValues[m_name] = inst;
 
+  // let a = blah;
+  if (m_value) {
+    auto valueRes = (*m_value)->codegenE();
+    if (!valueRes) {
+      return GenStatus::error;
+    }
+
+    m_generator->m_builder.CreateStore(*valueRes, inst);
+  }
+
   return GenStatus::ok;
 }
 
@@ -343,8 +353,6 @@ std::optional<llvm::Function *> FunctionAST::codegen() {
       break;
     }
   }
-
-  (*funcCode)->print(llvm::errs());
 
   // verify the generated code
   if (llvm::verifyFunction(**funcCode, &llvm::errs())) {
