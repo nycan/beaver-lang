@@ -35,7 +35,7 @@ std::optional<llvm::Value *> AssignmentOpAST::codegenE() {
   if (!rightCode) {
     return {};
   }
-  
+
   return m_op.codegen(m_generator, leftCode, *rightCode);
 };
 

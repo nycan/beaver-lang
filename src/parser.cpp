@@ -106,9 +106,8 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
   if (!expr) {
     return {};
   }
-  return std::make_unique<AssignmentOpAST>(
-    m_genData, *op, idName, std::move(*expr)
-  );
+  return std::make_unique<AssignmentOpAST>(m_genData, *op, idName,
+                                           std::move(*expr));
 }
 
 bool Parser::parseConditionalBlock(std::vector<blockPtr> &mainBlocks,

@@ -97,7 +97,7 @@ private:
 
 public:
   AssignmentOpAST(std::shared_ptr<Generator> t_generator, const Operation t_op,
-              std::string t_lhs, expressionPtr t_rhs)
+                  std::string t_lhs, expressionPtr t_rhs)
       : ExpressionTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),
         m_rhs(std::move(t_rhs)) {}
   std::optional<llvm::Value *> codegenE() override;
@@ -176,7 +176,8 @@ private:
   std::optional<expressionPtr> m_value;
 
 public:
-  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string &t_name, std::optional<expressionPtr> t_value)
+  DeclarationAST(std::shared_ptr<Generator> t_generator, std::string &t_name,
+                 std::optional<expressionPtr> t_value)
       : SyntaxTree(t_generator), m_name(t_name), m_value(std::move(t_value)) {}
   ~DeclarationAST() = default;
 
