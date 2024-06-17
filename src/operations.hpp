@@ -82,14 +82,78 @@ const Operation NOTEQTO = {
           llvm::Type::getDoubleTy(t_gen->m_builder.getContext()));
     }};
 
+// Assignment operators
+const Operation ASSIGN = {0, [](std::shared_ptr<Generator> t_gen,
+                                llvm::Value *t_lhs, llvm::Value *t_rhs) {
+                            t_gen->m_builder.CreateStore(t_rhs, t_lhs);
+                            return t_rhs;
+                          }};
+
+const Operation PLUSEQ = {
+    0, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+          llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
+      llvm::Value *res = t_gen->m_builder.CreateFAdd(load, t_rhs);
+      t_gen->m_builder.CreateStore(res, t_lhs);
+      return res;
+    }};
+
+const Operation MINUSEQ = {
+    0, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+          llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
+      llvm::Value *res = t_gen->m_builder.CreateFSub(load, t_rhs);
+      t_gen->m_builder.CreateStore(res, t_lhs);
+      return res;
+    }};
+
+const Operation TIMESEQ = {
+    0, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+          llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
+      llvm::Value *res = t_gen->m_builder.CreateFMul(load, t_rhs);
+      t_gen->m_builder.CreateStore(res, t_lhs);
+      return res;
+    }};
+
+const Operation DIVEQ = {
+    0, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+          llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
+      llvm::Value *res = t_gen->m_builder.CreateFDiv(load, t_rhs);
+      t_gen->m_builder.CreateStore(res, t_lhs);
+      return res;
+    }};
+
+const Operation MODEQ = {
+    0, [](std::shared_ptr<Generator> t_gen, llvm::Value *t_lhs,
+          llvm::Value *t_rhs) {
+      llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
+          llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
+      llvm::Value *res = t_gen->m_builder.CreateFRem(load, t_rhs);
+      t_gen->m_builder.CreateStore(res, t_lhs);
+      return res;
+    }};
+
 // Map of symbols to operations
 const std::map<std::string, Operation> opKeys = {
     {"+", ADD},        {"-", SUB},      {"*", MULT},    {"/", DIV},
     {"%", MOD},        {"<", LESSER},   {">", GREATER}, {"<=", LESSEREQ},
     {">=", GREATEREQ}, {"==", EQUALTO}, {"!=", NOTEQTO}};
+
+// These are stored differently because the LHS needs to be a l-value
+const std::map<std::string, Operation> assignmentKeys = {
+    {"=", ASSIGN},   {"+=", PLUSEQ}, {"-=", MINUSEQ},
+    {"*=", TIMESEQ}, {"/=", DIVEQ},  {"%=", MODEQ}};
+
 } // namespace operations
 
 // find operation given text
-std::optional<Operation> getOpFromKey(std::string t_key);
+std::optional<Operation> getBinOp(std::string t_key);
+std::optional<Operation> getAssignmentOp(std::string t_key);
 
 #endif // BEAVER_OPERATIONS_HPP

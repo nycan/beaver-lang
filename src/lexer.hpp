@@ -20,16 +20,18 @@ enum class Token {
   elseTok,
   returnTok,
   whileTok,
-  forTok
+  forTok,
+  letTok
 };
 
 namespace lexer {
 // conversion from strings to tokens
 const std::map<std::string, Token> TokenKeys = {
-    {"fn", Token::func},       {"extern", Token::externTok},
-    {"if", Token::ifTok},      {"else", Token::elseTok},
-    {"ret", Token::returnTok}, {"while", Token::whileTok},
-    {"for", Token::forTok},    {"elif", Token::elifTok}};
+    {"fn", Token::func},        {"extern", Token::externTok},
+    {"if", Token::ifTok},       {"elif", Token::elifTok},
+    {"else", Token::elseTok},   {"ret", Token::returnTok},
+    {"while", Token::whileTok}, {"for", Token::forTok},
+    {"let", Token::letTok}};
 } // namespace lexer
 
 // returns the token if one is found, and Token::identifier otherwise

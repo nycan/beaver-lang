@@ -5,7 +5,6 @@
 Generator::Generator()
     : m_context(), m_module("", m_context), m_builder(m_context),
       m_instrumentations(m_context, true) {
-
   m_instrumentations.registerCallbacks(m_callbacks, &m_moduleAnalyzer);
 
   m_funcPass.addPass(llvm::InstCombinePass());

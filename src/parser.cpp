@@ -52,18 +52,10 @@ std::optional<expressionPtr> Parser::parseParens() {
   return exprResult;
 }
 
-std::optional<expressionPtr> Parser::parseIdentifier() {
-  // parse identifier
-  std::string idName = m_lexer->getIdentifier();
+std::optional<expressionPtr> Parser::parseCall(std::string idName) {
+  // eat '('
   m_lexer->nextToken();
 
-  // variable
-  if (m_lexer->getChar() != '(') {
-    return std::make_unique<VariableAST>(m_genData, idName);
-  }
-
-  // function call
-  m_lexer->nextToken();
   std::vector<expressionPtr> args;
   while (m_lexer->getChar() != ')') {
     // parse argument
@@ -89,6 +81,33 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
   // parse ')'
   m_lexer->nextToken();
   return std::make_unique<CallAST>(m_genData, idName, std::move(args));
+}
+
+std::optional<expressionPtr> Parser::parseIdentifier() {
+  // parse identifier
+  std::string idName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
+
+  // function call
+  if (m_lexer->getChar() == '(') {
+    return parseCall(idName);
+  }
+
+  auto op = getAssignmentOp(m_lexer->getOperation());
+
+  // variable
+  if (!op) {
+    return std::make_unique<VariableAST>(m_genData, idName);
+  }
+
+  // assignment operator
+  m_lexer->nextToken();
+  auto expr = parseExpression();
+  if (!expr) {
+    return {};
+  }
+  return std::make_unique<AssignmentOpAST>(m_genData, *op, idName,
+                                           std::move(*expr));
 }
 
 bool Parser::parseConditionalBlock(std::vector<blockPtr> &mainBlocks,
@@ -203,6 +222,32 @@ std::optional<linePtr> Parser::parseFor() {
                                   std::move(*block));
 }
 
+std::optional<linePtr> Parser::parseDecl() {
+  // eat 'let'
+  m_lexer->nextToken();
+
+  // variable name
+  if (m_lexer->getTok() != Token::identifier) {
+    llvm::errs() << "Expected identifier\n";
+  }
+
+  std::string varName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
+
+  std::optional<expressionPtr> value = {};
+
+  if (m_lexer->getOperation() == "=") {
+    m_lexer->nextToken();
+
+    value = parseExpression();
+    if (!value) {
+      return {};
+    }
+  }
+
+  return std::make_unique<DeclarationAST>(m_genData, varName, std::move(value));
+}
+
 // helper function for parseMain to parse the last character when the token is
 // unknown
 std::optional<expressionPtr> Parser::handleUnknown() {
@@ -243,7 +288,7 @@ std::optional<expressionPtr> Parser::parseOpRHS(const int t_minPrec,
                                                 expressionPtr t_leftSide) {
   while (true) {
     // parse operation
-    auto op = getOpFromKey(m_lexer->getOperation());
+    auto op = getBinOp(m_lexer->getOperation());
     if (!op) {
       return t_leftSide;
     }
@@ -261,13 +306,13 @@ std::optional<expressionPtr> Parser::parseOpRHS(const int t_minPrec,
     }
 
     // if the expression continues, parse it
-    auto nextOp = getOpFromKey(m_lexer->getOperation());
+    auto nextOp = getBinOp(m_lexer->getOperation());
     if (!nextOp.has_value()) {
       return std::make_unique<BinaryOpAST>(
           m_genData, *op, std::move(t_leftSide), std::move(*rightSide));
     }
-    // if the next operator is higher precedence, it needs to be handled before
-    // this one parse recursively
+    // if the next operator is higher precedence, it needs to be handled
+    // before this one parse recursively
 
     if (op->precedence < nextOp->precedence) {
       rightSide = parseOpRHS(op->precedence + 1, std::move(*rightSide));
@@ -398,6 +443,8 @@ std::optional<linePtr> Parser::parseInner() {
     return parseWhile();
   case Token::forTok:
     return parseFor();
+  case Token::letTok:
+    return parseDecl();
   case Token::elifTok:
     llvm::errs() << "Got 'elif' with no 'if' to match.\n";
   case Token::elseTok:
