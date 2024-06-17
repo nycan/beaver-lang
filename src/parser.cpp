@@ -53,6 +53,9 @@ std::optional<expressionPtr> Parser::parseParens() {
 }
 
 std::optional<expressionPtr> Parser::parseCall(std::string idName) {
+  // eat '('
+  m_lexer->nextToken();
+
   std::vector<expressionPtr> args;
   while (m_lexer->getChar() != ')') {
     // parse argument
