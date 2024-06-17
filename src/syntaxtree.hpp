@@ -88,6 +88,21 @@ public:
   std::optional<llvm::Value *> codegenE() override;
 };
 
+// assignment operations
+class AssignmentOpAST : public ExpressionTree {
+private:
+  const Operation m_op;
+  std::string m_lhs;
+  expressionPtr m_rhs;
+
+public:
+  AssignmentOpAST(std::shared_ptr<Generator> t_generator, const Operation t_op,
+              std::string t_lhs, expressionPtr t_rhs)
+      : ExpressionTree(t_generator), m_op(t_op), m_lhs(std::move(t_lhs)),
+        m_rhs(std::move(t_rhs)) {}
+  std::optional<llvm::Value *> codegenE() override;
+};
+
 // function calls
 class CallAST : public ExpressionTree {
 private:

@@ -85,7 +85,7 @@ const Operation NOTEQTO = {
 // Assignment operators
 const Operation ASSIGN = {0, [](std::shared_ptr<Generator> t_gen,
                                 llvm::Value *t_lhs, llvm::Value *t_rhs) {
-                            t_gen->m_builder.CreateStore(t_lhs, t_rhs);
+                            t_gen->m_builder.CreateStore(t_rhs, t_lhs);
                             return t_rhs;
                           }};
 
@@ -95,7 +95,7 @@ const Operation PLUSEQ = {
       llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
           llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
       llvm::Value *res = t_gen->m_builder.CreateFAdd(load, t_rhs);
-      t_gen->m_builder.CreateStore(t_lhs, res);
+      t_gen->m_builder.CreateStore(res, t_lhs);
       return res;
     }};
 
@@ -105,7 +105,7 @@ const Operation MINUSEQ = {
       llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
           llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
       llvm::Value *res = t_gen->m_builder.CreateFSub(load, t_rhs);
-      t_gen->m_builder.CreateStore(t_lhs, res);
+      t_gen->m_builder.CreateStore(res, t_lhs);
       return res;
     }};
 
@@ -115,7 +115,7 @@ const Operation TIMESEQ = {
       llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
           llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
       llvm::Value *res = t_gen->m_builder.CreateFMul(load, t_rhs);
-      t_gen->m_builder.CreateStore(t_lhs, res);
+      t_gen->m_builder.CreateStore(res, t_lhs);
       return res;
     }};
 
@@ -125,7 +125,7 @@ const Operation DIVEQ = {
       llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
           llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
       llvm::Value *res = t_gen->m_builder.CreateFDiv(load, t_rhs);
-      t_gen->m_builder.CreateStore(t_lhs, res);
+      t_gen->m_builder.CreateStore(res, t_lhs);
       return res;
     }};
 
@@ -135,7 +135,7 @@ const Operation MODEQ = {
       llvm::LoadInst *load = t_gen->m_builder.CreateLoad(
           llvm::Type::getDoubleTy(t_gen->m_context), t_lhs);
       llvm::Value *res = t_gen->m_builder.CreateFRem(load, t_rhs);
-      t_gen->m_builder.CreateStore(t_lhs, res);
+      t_gen->m_builder.CreateStore(res, t_lhs);
       return res;
     }};
 
@@ -147,6 +147,7 @@ const std::map<std::string, Operation> opKeys = {
 
 // These are stored differently because the LHS needs to be a l-value
 const std::map<std::string, Operation> assignmentKeys = {{"=", ASSIGN},
+                                                         {"+=", PLUSEQ},
                                                          {"-=", MINUSEQ},
                                                          {"*=", TIMESEQ},
                                                          {"/=", DIVEQ},

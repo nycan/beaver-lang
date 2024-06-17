@@ -25,6 +25,20 @@ std::optional<llvm::Value *> BinaryOpAST::codegenE() {
   return m_op.codegen(m_generator, *leftCode, *rightCode);
 };
 
+std::optional<llvm::Value *> AssignmentOpAST::codegenE() {
+  auto leftCode = m_generator->m_namedValues[m_lhs];
+  if (!leftCode) {
+    return {};
+  }
+
+  std::optional<llvm::Value *> rightCode = m_rhs->codegenE();
+  if (!rightCode) {
+    return {};
+  }
+  
+  return m_op.codegen(m_generator, leftCode, *rightCode);
+};
+
 std::optional<llvm::Value *> CallAST::codegenE() {
   // search for the function being called
   llvm::Function *calledFunction = m_generator->m_module.getFunction(m_callee);

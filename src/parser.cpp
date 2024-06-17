@@ -90,13 +90,11 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
     return parseCall(idName);
   }
 
-  expressionPtr varAst = std::make_unique<VariableAST>(m_genData, idName);
-
   auto op = getAssignmentOp(m_lexer->getOperation());
 
   // variable
   if (!op) {
-    return varAst;
+    return std::make_unique<VariableAST>(m_genData, idName);
   }
 
   // assignment operator
@@ -105,8 +103,8 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
   if (!expr) {
     return {};
   }
-  return std::make_unique<BinaryOpAST>(
-    m_genData, *op, std::move(varAst), std::move(*expr)
+  return std::make_unique<AssignmentOpAST>(
+    m_genData, *op, idName, std::move(*expr)
   );
 }
 
