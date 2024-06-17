@@ -24,6 +24,7 @@ private:
   std::optional<expressionPtr> parseNum();
   std::optional<expressionPtr> parseExpression();
   std::optional<expressionPtr> parseParens();
+  std::optional<expressionPtr> parseCall(std::string idName);
   std::optional<expressionPtr> parseIdentifier();
   // returns 0 iff the block was successfully parsed
   bool parseConditionalBlock(std::vector<blockPtr> &mainBlocks,

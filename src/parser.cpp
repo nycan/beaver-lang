@@ -52,18 +52,7 @@ std::optional<expressionPtr> Parser::parseParens() {
   return exprResult;
 }
 
-std::optional<expressionPtr> Parser::parseIdentifier() {
-  // parse identifier
-  std::string idName = m_lexer->getIdentifier();
-  m_lexer->nextToken();
-
-  // variable
-  if (m_lexer->getChar() != '(') {
-    return std::make_unique<VariableAST>(m_genData, idName);
-  }
-
-  // function call
-  m_lexer->nextToken();
+std::optional<expressionPtr> Parser::parseCall(std::string idName) {
   std::vector<expressionPtr> args;
   while (m_lexer->getChar() != ')') {
     // parse argument
@@ -89,6 +78,36 @@ std::optional<expressionPtr> Parser::parseIdentifier() {
   // parse ')'
   m_lexer->nextToken();
   return std::make_unique<CallAST>(m_genData, idName, std::move(args));
+}
+
+std::optional<expressionPtr> Parser::parseIdentifier() {
+  // parse identifier
+  std::string idName = m_lexer->getIdentifier();
+  m_lexer->nextToken();
+
+  // function call
+  if (m_lexer->getChar() == '(') {
+    return parseCall(idName);
+  }
+
+  expressionPtr varAst = std::make_unique<VariableAST>(m_genData, idName);
+
+  auto op = getAssignmentOp(m_lexer->getOperation());
+
+  // variable
+  if (!op) {
+    return varAst;
+  }
+
+  // assignment operator
+  m_lexer->nextToken();
+  auto expr = parseExpression();
+  if (!expr) {
+    return {};
+  }
+  return std::make_unique<BinaryOpAST>(
+    m_genData, *op, std::move(varAst), std::move(*expr)
+  );
 }
 
 bool Parser::parseConditionalBlock(std::vector<blockPtr> &mainBlocks,

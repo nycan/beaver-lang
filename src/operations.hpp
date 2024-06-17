@@ -143,13 +143,14 @@ const Operation MODEQ = {
 const std::map<std::string, Operation> opKeys = {
     {"+", ADD},        {"-", SUB},      {"*", MULT},     {"/", DIV},
     {"%", MOD},        {"<", LESSER},   {">", GREATER},  {"<=", LESSEREQ},
-    {">=", GREATEREQ}, {"==", EQUALTO}, {"!=", NOTEQTO}, {"+=", PLUSEQ},
-    {"-=", MINUSEQ},   {"*=", TIMESEQ}, {"/=", DIVEQ},   {"%=", MODEQ}};
+    {">=", GREATEREQ}, {"==", EQUALTO}, {"!=", NOTEQTO}};
 
-const std::map<std::string, Operation> assignmentKeys = {
-    {"=", ASSIGN},
-    {"-=", MINUSEQ},   {"*=", TIMESEQ}, {"/=", DIVEQ},   {"%=", MODEQ}
-};
+// These are stored differently because the LHS needs to be a l-value
+const std::map<std::string, Operation> assignmentKeys = {{"=", ASSIGN},
+                                                         {"-=", MINUSEQ},
+                                                         {"*=", TIMESEQ},
+                                                         {"/=", DIVEQ},
+                                                         {"%=", MODEQ}};
 
 } // namespace operations
 
