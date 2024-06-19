@@ -49,9 +49,13 @@ fn mutable() {
 fn main() {
     # just return the thing you want to print
     # I have not yet added printing as it is OS-specific
+    # the POSIX interface is relatively straightforward but converting a double to a string isn't.
     ret doSmthn(3,4);
 }
 
 # note: all types are doubles currently. I was planning on adding types but didn't end up having time.
 # error handling is not great but there is some
+# There are probably still some bugs
+
+# I hope to keep working on this over the summer and add the features I missed adding because I spent too long debugging.
 ```
