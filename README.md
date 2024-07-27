@@ -1,14 +1,10 @@
 # Beaver language
-A compiler for my own (still very minimal) language built as an SDS for CS20. It includes functions, mutable variables and complex expressions. \
+A compiler for my own (still very minimal) language submitted as an SDS for CS20 (although really more of a hobby project). It includes functions, mutable variables and complex expressions. \
 The most difficult part was creating the code generation for conditional statements - I probably spent a few good weeks debugging it. \
-I am proud of the fact that I did this project using much better programming practices than I have been previously. However, there is definitely still room for improvement.
-
-Received help from:
-- StackOverflow
-- LLVM Kaleidoscope tutorial
-- LLVM docs
-- C++ docs
-- Some random blogs
+I am proud of the fact that I did this project using much better programming practices than I have been previously. However, there is definitely still room for improvement. \
+I haven't worked on the project in a few weeks but I plan to continue it in the near future. The next feature will probably be basic types. \
+The language is called Beaver due to beavers' ability to build complex structures, pull heavy loads, and maintain a thriving ecosystem. \
+The syntax is a mix of a bunch of languages, most notably C and Rust.
 
 ## Installation instructions
 Installation is currently only supported on MacOS and Linux. Installation may work on Windows, but it is recommended to use WSL.
